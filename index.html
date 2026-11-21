@@ -1,43 +1,44 @@
+HTML
 
 <!DOCTYPE html>
 <html lang="hi">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Rider Bike Care V8</title>
+<title>Rider Bike Care V9</title>
+
 <style>
 *{box-sizing:border-box}
 body{margin:0;background:#f1f4f9;font-family:Arial,sans-serif;color:#17243b}
 header{background:linear-gradient(135deg,#101d39,#1769aa);color:white;padding:20px}
 header h2{margin:0 0 8px}
-header p{margin:5px 0}
-.container{max-width:900px;margin:auto;padding:12px}
+.container{max-width:950px;margin:auto;padding:12px}
 .hidden{display:none!important}
 .box{background:white;padding:16px;border-radius:12px;margin:12px 0;box-shadow:0 2px 9px #00000010}
-.tabs{display:flex;gap:7px;overflow-x:auto;margin:12px 0}
-button{border:0;border-radius:8px;padding:11px 14px;background:#e2e8f0;color:#17243b;font-weight:bold;cursor:pointer;margin:3px}
+.tabs{display:flex;gap:6px;overflow-x:auto;margin:12px 0}
+button{border:0;border-radius:8px;padding:11px 13px;background:#e2e8f0;color:#17243b;font-weight:bold;cursor:pointer;margin:3px}
 .tabs button{white-space:nowrap}
-button.primary{background:#1769aa;color:white}
-button.green{background:#079768;color:white}
-button.gray{background:#64748b;color:white}
-button.red{background:#dc3545;color:white}
+.primary{background:#1769aa;color:white}
+.green{background:#079768;color:white}
+.gray{background:#64748b;color:white}
+.red{background:#dc3545;color:white}
 input{width:100%;padding:12px;border:1px solid #cbd5e1;border-radius:8px;margin:7px 0 13px;font-size:15px}
 label{font-weight:bold;font-size:14px}
 .page{display:none}
 .page.active{display:block}
 .stats{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
-.stat{background:#fff;padding:15px;border-radius:10px;box-shadow:0 2px 8px #0001}
+.stat{background:white;padding:15px;border-radius:10px;box-shadow:0 2px 8px #0001}
 .stat p{margin:0 0 7px;color:#64748b;font-size:13px}
 .stat b{font-size:19px;color:#1769aa}
-.item,.reminder{padding:13px;border:1px solid #e2e8f0;border-radius:10px;margin:10px 0;background:white}
+.item,.reminder{padding:13px;border:1px solid #e2e8f0;border-radius:10px;margin:10px 0;background:white;overflow-wrap:anywhere}
 .item p,.reminder p{margin:6px 0;font-size:14px}
 .reminder.overdue{border-left:5px solid #dc3545}
 .reminder.today{border-left:5px solid #e59a16}
 footer{text-align:center;padding:20px;color:#64748b}
-h3{margin-top:5px}
 @media(min-width:600px){.stats{grid-template-columns:repeat(4,1fr)}}
 </style>
 </head>
+
 <body>
 
 <header>
@@ -70,22 +71,23 @@ h3{margin-top:5px}
 </div>
 
 <div class="tabs">
-<button onclick="showPage('home',this)" class="primary">🏠 होम</button>
+<button class="primary" onclick="showPage('home',this)">🏠 होम</button>
 <button onclick="showPage('add',this)">➕ ग्राहक जोड़ें</button>
 <button onclick="showPage('list',this)">👥 रिकॉर्ड</button>
+<button onclick="showPage('accounts',this)">💰 हिसाब</button>
 <button onclick="logout()">Logout</button>
 </div>
 
 <div id="home" class="page active">
 <div class="box">
 <h3>🏍️ Rider Bike Care Dashboard</h3>
-<p>अपने सभी ग्राहकों और सर्विस का हिसाब रखें।</p>
+<p>अपने ग्राहकों और बाइक सर्विस का पूरा हिसाब रखें।</p>
 <button class="primary" onclick="showPage('add',document.querySelectorAll('.tabs button')[1])">नया ग्राहक जोड़ें</button>
 </div>
 
 <div class="box">
 <h3>🔔 सर्विस रिमाइंडर</h3>
-<p>अगले 3 दिन में होने वाली और बाकी सर्विस</p>
+<p>आने वाली और बाकी सर्विस</p>
 <div id="reminders">लोड हो रहा है...</div>
 </div>
 
@@ -118,22 +120,35 @@ h3{margin-top:5px}
 </div>
 </div>
 
+<div id="accounts" class="page">
+<div class="box">
+<h3>💰 कमाई और खर्च का हिसाब</h3>
+<p>कुल कमाई: <b id="accountIncome">₹0</b></p>
+<p>कुल खर्च: <b id="accountExpense">₹0</b></p>
+<p>शुद्ध बचत: <b id="accountProfit">₹0</b></p>
+<hr>
+<h3>सभी सर्विस का हिसाब</h3>
+<div id="accountList"></div>
+</div>
 </div>
 
+</div>
 <footer>© 2026 Rider Bike Care</footer>
 </div>
 
 <script type="module">
+
 import {initializeApp} from "https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js";
 
 import {
-getAuth,createUserWithEmailAndPassword,signInWithEmailAndPassword,
-signOut,onAuthStateChanged,sendPasswordResetEmail
+getAuth,createUserWithEmailAndPassword,
+signInWithEmailAndPassword,signOut,
+onAuthStateChanged,sendPasswordResetEmail
 } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-auth.js";
 
 import {
-getFirestore,collection,addDoc,getDocs,deleteDoc,doc,
-serverTimestamp,updateDoc
+getFirestore,collection,addDoc,getDocs,
+deleteDoc,doc,serverTimestamp,updateDoc
 } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js";
 
 const firebaseConfig={
@@ -150,31 +165,35 @@ const firebaseApp=initializeApp(firebaseConfig);
 const auth=getAuth(firebaseApp);
 const db=getFirestore(firebaseApp);
 
-let customers=[],services=[],uid=null;
+let customers=[];
+let services=[];
+let uid=null;
 
 const SHOP_NAME="Rider Bike Care";
 const SHOP_PHONE="9598480917";
 const $=id=>document.getElementById(id);
 
-function message(text){
-$("authMessage").innerText=text;
-}
+function message(t){$("authMessage").innerText=t}
 
-function escapeHTML(value){
-return String(value??"").replace(/[&<>"']/g,c=>({
+function escapeHTML(v){
+return String(v??"").replace(/[&<>"']/g,c=>({
 "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
 }[c]));
 }
 
-function isValidDateString(value){
-if(!/^\d{4}-\d{2}-\d{2}$/.test(value))return false;
-const [y,m,d]=value.split("-").map(Number);
-const date=new Date(y,m-1,d);
-return date.getFullYear()===y&&date.getMonth()===m-1&&date.getDate()===d;
+function money(v){
+return "₹"+Number(v||0).toLocaleString("en-IN");
 }
 
-function dateToDayNumber(value){
-const [y,m,d]=value.split("-").map(Number);
+function isValidDateString(v){
+if(!/^\d{4}-\d{2}-\d{2}$/.test(v))return false;
+const [y,m,d]=v.split("-").map(Number);
+const x=new Date(y,m-1,d);
+return x.getFullYear()===y&&x.getMonth()===m-1&&x.getDate()===d;
+}
+
+function dateToDayNumber(v){
+const [y,m,d]=v.split("-").map(Number);
 return Math.floor(Date.UTC(y,m-1,d)/86400000);
 }
 
@@ -187,77 +206,55 @@ function todayText(){
 return new Date().toLocaleDateString("hi-IN");
 }
 
-function money(value){
-return "₹"+Number(value||0).toLocaleString("en-IN");
-}
-
 window.showPage=function(page,button){
 document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));
 $(page).classList.add("active");
-
 document.querySelectorAll(".tabs button").forEach(b=>b.classList.remove("primary"));
-
 if(button)button.classList.add("primary");
 };
 
 window.register=async function(){
-let email=$("email").value.trim();
-let password=$("password").value;
-
-if(!email||!password){
-message("Email और Password डालें");
-return;
-}
-
+const email=$("email").value.trim();
+const password=$("password").value;
+if(!email||!password){message("Email और Password डालें");return}
 try{
 await createUserWithEmailAndPassword(auth,email,password);
 message("Account सफलतापूर्वक बन गया!");
-}catch(e){
-message("Register Error: "+e.message);
-}
+}catch(e){message("Register Error: "+e.message)}
 };
 
 window.login=async function(){
-let email=$("email").value.trim();
-let password=$("password").value;
-
-if(!email||!password){
-message("Email और Password डालें");
-return;
-}
-
+const email=$("email").value.trim();
+const password=$("password").value;
+if(!email||!password){message("Email और Password डालें");return}
 try{
 message("Login हो रहा है...");
 await signInWithEmailAndPassword(auth,email,password);
 message("Login सफल!");
-}catch(e){
-message("Login Error: "+e.message);
-}
+}catch(e){message("Login Error: "+e.message)}
 };
 
 window.resetPassword=async function(){
-let email=$("email").value.trim();
-
-if(!email){
-message("पहले Email डालें");
-return;
-}
-
+const email=$("email").value.trim();
+if(!email){message("पहले Email डालें");return}
 try{
 await sendPasswordResetEmail(auth,email);
 message("Password Reset लिंक Email पर भेज दिया गया है।");
-}catch(e){
-message("Reset Error: "+e.message);
-}
+}catch(e){message("Reset Error: "+e.message)}
 };
 
 window.logout=async function(){
-try{
-await signOut(auth);
-}catch(e){
-alert(e.message);
-}
+try{await signOut(auth)}
+catch(e){alert(e.message)}
 };
+
+function customerRef(){
+return collection(db,"users",uid,"customers");
+}
+
+function serviceRef(){
+return collection(db,"users",uid,"services");
+}
 
 onAuthStateChanged(auth,async user=>{
 if(user){
@@ -275,17 +272,8 @@ $("authBox").classList.remove("hidden");
 }
 });
 
-function customerRef(){
-return collection(db,"users",uid,"customers");
-}
-
-function serviceRef(){
-return collection(db,"users",uid,"services");
-}
-
 async function loadData(){
 if(!uid)return;
-
 try{
 const c=await getDocs(customerRef());
 customers=c.docs.map(d=>({id:d.id,...d.data()}));
@@ -300,10 +288,10 @@ alert("Firestore Error: "+e.message);
 }
 
 window.addCustomer=async function(){
-let name=$("name").value.trim();
-let phone=$("phone").value.trim();
-let bike=$("bike").value.trim();
-let number=$("number").value.trim();
+const name=$("name").value.trim();
+const phone=$("phone").value.trim();
+const bike=$("bike").value.trim();
+const number=$("number").value.trim();
 
 if(!name||!bike||!number||!/^[0-9]{10}$/.test(phone)){
 alert("सभी जानकारी सही भरें।");
@@ -312,7 +300,8 @@ return;
 
 try{
 await addDoc(customerRef(),{
-name,phone,bike,number,createdAt:serverTimestamp()
+name,phone,bike,number,
+createdAt:serverTimestamp()
 });
 
 $("name").value="";
@@ -322,65 +311,58 @@ $("number").value="";
 
 alert("ग्राहक सेव हो गया!");
 await loadData();
-
 showPage("list",document.querySelectorAll(".tabs button")[2]);
 
-}catch(e){
-alert("Save Error: "+e.message);
-}
+}catch(e){alert("Save Error: "+e.message)}
 };
 
+/* ADD SERVICE */
+
 window.addService=async function(id){
-let c=customers.find(x=>x.id===id);
+const c=customers.find(x=>x.id===id);
 if(!c)return;
 
-let partsText=prompt("पार्ट्स का चार्ज लिखें (₹)","0");
+const partsText=prompt("पार्ट्स का चार्ज (₹)","0");
 if(partsText===null)return;
+const parts=Number(partsText);
 
-let parts=Number(partsText);
-
-let labourText=prompt("लेबर चार्ज लिखें (₹)","0");
+const labourText=prompt("लेबर चार्ज (₹)","0");
 if(labourText===null)return;
+const labour=Number(labourText);
 
-let labour=Number(labourText);
-
-let expenseText=prompt("सर्विस का कुल खर्च लिखें (₹)","0");
+const expenseText=prompt("सर्विस का कुल खर्च (₹)","0");
 if(expenseText===null)return;
+const expense=Number(expenseText);
 
-let expense=Number(expenseText);
-
-if(!Number.isFinite(parts)||parts<0||
-!Number.isFinite(labour)||labour<0||
-!Number.isFinite(expense)||expense<0||parts+labour<=0){
-alert("पार्ट्स, लेबर और खर्च की रकम सही डालें।");
+if(![parts,labour,expense].every(v=>Number.isFinite(v)&&v>=0)||parts+labour<=0){
+alert("सही रकम डालें।");
 return;
 }
 
 let nextDate=prompt(
-"अगली सर्विस की तारीख लिखें (YYYY-MM-DD)\nउदाहरण: 2026-12-15\nखाली छोड़ने पर रिमाइंडर नहीं बनेगा।"
+"अगली सर्विस की तारीख लिखें (YYYY-MM-DD)\nउदाहरण: 2026-12-15\nखाली छोड़ सकते हैं।"
 );
 
 if(nextDate===null)return;
-
 nextDate=nextDate.trim();
 
 if(nextDate&&!isValidDateString(nextDate)){
-alert("तारीख सही फॉर्मेट में डालें: YYYY-MM-DD");
+alert("तारीख सही फॉर्मेट में डालें।");
 return;
 }
 
-let count=services.filter(s=>s.customerId===id).length+1;
-let discount=count%5===0?Math.round(parts+labour)*10/100:0;
-let amount=parts+labour;
-let finalIncome=amount-discount;
+const count=services.filter(s=>s.customerId===id).length+1;
+const discount=count%5===0?Math.round((parts+labour)*10)/100:0;
+const amount=parts+labour;
+const income=amount-discount;
 
 if(!confirm(
 "ग्राहक: "+c.name+
-"\nपार्ट्स चार्ज: "+money(parts)+
-"\nलेबर चार्ज: "+money(labour)+
+"\nपार्ट्स: "+money(parts)+
+"\nलेबर: "+money(labour)+
 "\nकुल रकम: "+money(amount)+
 "\nडिस्काउंट: "+money(discount)+
-"\nप्राप्त रकम: "+money(finalIncome)+
+"\nप्राप्त रकम: "+money(income)+
 "\nखर्च: "+money(expense)+
 "\nअगली सर्विस: "+(nextDate||"नहीं चुनी")+
 "\n\nक्या सर्विस सेव करें?"
@@ -401,7 +383,7 @@ partsCharge:parts,
 labourCharge:labour,
 amount,
 discount,
-income:finalIncome,
+income,
 expense,
 nextServiceDate:nextDate,
 date:todayText(),
@@ -409,55 +391,39 @@ createdAt:serverTimestamp()
 });
 
 alert("सर्विस सेव हो गई!\nबिल नंबर: "+billNo);
-
 await loadData();
 
-}catch(e){
-alert("Service Error: "+e.message);
-}
+}catch(e){alert("Service Error: "+e.message)}
 };
 
 /* EDIT SERVICE */
+
 window.editService=async function(id){
 const s=services.find(x=>x.id===id);
 if(!s)return;
 
-let partsText=prompt("पार्ट्स चार्ज (₹)",String(s.partsCharge??0));
-if(partsText===null)return;
+const p=prompt("पार्ट्स चार्ज (₹)",String(s.partsCharge??0));
+if(p===null)return;
 
-let labourText=prompt(
-"लेबर चार्ज (₹)",
-String(s.labourCharge??s.amount??0)
-);
-if(labourText===null)return;
+const l=prompt("लेबर चार्ज (₹)",String(s.labourCharge??s.amount??0));
+if(l===null)return;
 
-let expenseText=prompt("सर्विस खर्च (₹)",String(s.expense??0));
-if(expenseText===null)return;
+const e=prompt("सर्विस खर्च (₹)",String(s.expense??0));
+if(e===null)return;
 
-let parts=Number(partsText);
-let labour=Number(labourText);
-let expense=Number(expenseText);
+const parts=Number(p),labour=Number(l),expense=Number(e);
 
-if(![parts,labour,expense].every(v=>Number.isFinite(v)&&v>=0)){
+if(![parts,labour,expense].every(v=>Number.isFinite(v)&&v>=0)||parts+labour<=0){
 alert("सही रकम डालें।");
 return;
 }
 
-if(parts+labour<=0){
-alert("पार्ट्स या लेबर चार्ज शून्य से ज्यादा होना चाहिए।");
-return;
-}
-
-let nextDate=prompt(
-"अगली सर्विस की तारीख (YYYY-MM-DD)",
-s.nextServiceDate||""
-);
-
+let nextDate=prompt("अगली सर्विस की तारीख (YYYY-MM-DD)",s.nextServiceDate||"");
 if(nextDate===null)return;
 nextDate=nextDate.trim();
 
 if(nextDate&&!isValidDateString(nextDate)){
-alert("तारीख YYYY-MM-DD फॉर्मेट में डालें।");
+alert("तारीख सही फॉर्मेट में डालें।");
 return;
 }
 
@@ -465,91 +431,73 @@ const amount=parts+labour;
 const discount=Number(s.discount||0);
 const income=amount-discount;
 
-if(income<0){
-alert("डिस्काउंट कुल रकम से अधिक नहीं हो सकता।");
-return;
-}
+if(income<0){alert("डिस्काउंट कुल रकम से अधिक है।");return}
 
-if(!confirm(
-"क्या इस सर्विस की जानकारी अपडेट करनी है?\n"+
-"नई कुल रकम: "+money(amount)+
-"\nडिस्काउंट: "+money(discount)+
-"\nप्राप्त रकम: "+money(income)
-))return;
+if(!confirm("क्या इस सर्विस को अपडेट करना है?"))return;
 
 try{
 await updateDoc(doc(db,"users",uid,"services",id),{
 partsCharge:parts,
 labourCharge:labour,
-expense:expense,
-amount:amount,
-discount:discount,
-income:income,
+expense,
+amount,
+discount,
+income,
 nextServiceDate:nextDate
 });
-
-alert("सर्विस सफलतापूर्वक अपडेट हो गई!");
+alert("सर्विस अपडेट हो गई!");
 await loadData();
-
-}catch(e){
-alert("Update Error: "+e.message);
-}
+}catch(err){alert("Update Error: "+err.message)}
 };
 
 /* DELETE SERVICE */
+
 window.deleteService=async function(id){
 const s=services.find(x=>x.id===id);
 if(!s)return;
 
-if(!confirm(
-"क्या आप यह सर्विस रिकॉर्ड हटाना चाहते हैं?\n"+
-"ग्राहक: "+s.name+
-"\nबिल नंबर: "+(s.billNo||"")+
-"\n\nयह रिकॉर्ड हमेशा के लिए हट जाएगा।"
-))return;
+if(!confirm("क्या यह सर्विस रिकॉर्ड हमेशा के लिए हटाना चाहते हैं?\n"+s.name))return;
 
 try{
 await deleteDoc(doc(db,"users",uid,"services",id));
-
 alert("सर्विस रिकॉर्ड हटा दिया गया!");
 await loadData();
-
-}catch(e){
-alert("Delete Error: "+e.message);
-}
+}catch(e){alert("Delete Error: "+e.message)}
 };
+
+/* RECEIPT */
 
 function receiptHTML(s){
 const parts=Number(s.partsCharge??0);
-const labour=Number(s.labourCharge??s.amount??s.income??0);
-const amount=Number(s.amount??(parts+labour));
+const labour=Number(s.labourCharge??s.amount??0);
+const amount=Number(s.amount??parts+labour);
 const discount=Number(s.discount||0);
-const income=Number(s.income??(amount-discount));
-const billNo=s.billNo||("RBC-OLD-"+String(s.id).slice(0,8));
+const income=Number(s.income??amount-discount);
+const billNo=s.billNo||"RBC-OLD";
 
 return `<!DOCTYPE html>
 <html lang="hi">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>रसीद ${escapeHTML(billNo)}</title>
+<title>Rider Bike Care Receipt</title>
 <style>
-body{font-family:Arial,sans-serif;color:#17243b;padding:15px;max-width:600px;margin:auto}
-.receipt{border:2px solid #1769aa;border-radius:12px;padding:20px;background:white}
+body{font-family:Arial;padding:15px;color:#17243b;max-width:600px;margin:auto}
+.receipt{border:2px solid #1769aa;border-radius:12px;padding:20px}
 .head{text-align:center;border-bottom:2px solid #1769aa;padding-bottom:12px}
-.head h2{margin:5px;color:#1769aa}
+.head h2{color:#1769aa}
+.line{display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid #ddd}
+.total{font-size:20px;color:#079768;font-weight:bold}
 .center{text-align:center}
-.line{display:flex;justify-content:space-between;gap:10px;padding:10px 0;border-bottom:1px solid #ddd}
-.total{font-size:20px;font-weight:bold;color:#079768}
 .small{font-size:13px;color:#64748b}
-button{padding:12px 18px;background:#1769aa;color:white;border:0;border-radius:8px;margin:10px 3px}
-@media print{button{display:none}body{padding:0}.receipt{border:1px solid #333}}
+button{padding:12px;background:#1769aa;color:white;border:0;border-radius:8px;margin:8px}
+@media print{button{display:none}body{padding:0}}
 </style>
 </head>
 <body>
 <div class="receipt" id="receipt">
 <div class="head">
-<h2>🏍️ ${SHOP_NAME}</h2>
+<h2>🏍️ Rider Bike Care</h2>
 <p>बाइक रिपेयर एवं सर्विस सेंटर</p>
 <b>मोबाइल: ${SHOP_PHONE}</b>
 <h3>सर्विस रसीद</h3>
@@ -558,66 +506,28 @@ button{padding:12px 18px;background:#1769aa;color:white;border:0;border-radius:8
 <p><b>बिल नंबर:</b> ${escapeHTML(billNo)}</p>
 <p><b>तारीख:</b> ${escapeHTML(s.date||"")}</p>
 <hr>
-
 <h3>ग्राहक की जानकारी</h3>
 <p><b>नाम:</b> ${escapeHTML(s.name)}</p>
 <p><b>मोबाइल:</b> ${escapeHTML(s.phone)}</p>
 <p><b>बाइक:</b> ${escapeHTML(s.bike)}</p>
 <p><b>बाइक नंबर:</b> ${escapeHTML(s.number)}</p>
 <hr>
-
 <h3>सर्विस का बिल</h3>
 <div class="line"><span>पार्ट्स चार्ज</span><b>${money(parts)}</b></div>
 <div class="line"><span>लेबर चार्ज</span><b>${money(labour)}</b></div>
 <div class="line"><span>कुल रकम</span><b>${money(amount)}</b></div>
 <div class="line"><span>डिस्काउंट</span><b>${money(discount)}</b></div>
-<div class="line total"><span>कुल भुगतान</span><span>${money(income)}</span></div>
-
+<div class="line total"><span>प्राप्त रकम</span><span>${money(income)}</span></div>
 <p class="small">सर्विस नंबर: ${Number(s.serviceNo||1)}</p>
 <hr>
 <p class="center"><b>धन्यवाद! फिर से सेवा का मौका दें।</b></p>
-<p class="center small">${SHOP_NAME} | ${SHOP_PHONE}</p>
+<p class="center small">Rider Bike Care | ${SHOP_PHONE}</p>
 </div>
 
 <div class="center">
-<button id="pdfButton" onclick="downloadPDF()">📥 PDF डाउनलोड करें</button>
-<button onclick="window.print()">प्रिंट करें</button>
-<p id="pdfStatus" class="small"></p>
+<button onclick="window.print()">📥 PDF डाउनलोड / प्रिंट</button>
+<p class="small">प्रिंट विकल्प में Save as PDF चुनें।</p>
 </div>
-
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"><\/script>
-<script>
-async function downloadPDF(){
-const status=document.getElementById("pdfStatus");
-const button=document.getElementById("pdfButton");
-const element=document.getElementById("receipt");
-
-if(typeof html2pdf==="undefined"){
-status.innerText="PDF लाइब्रेरी लोड नहीं हुई। इंटरनेट चालू करके दोबारा खोलें।";
-return;
-}
-
-button.disabled=true;
-status.innerText="PDF तैयार हो रही है...";
-
-try{
-await html2pdf().set({
-margin:8,
-filename:${JSON.stringify("Rider-Bike-Care-"+billNo+".pdf")},
-image:{type:"jpeg",quality:0.98},
-html2canvas:{scale:2,useCORS:true,backgroundColor:"#ffffff"},
-jsPDF:{unit:"mm",format:"a4",orientation:"portrait"}
-}).from(element).save();
-
-status.innerText="PDF डाउनलोड हो गई!";
-
-}catch(error){
-status.innerText="PDF नहीं बनी: "+error.message;
-}finally{
-button.disabled=false;
-}
-}
-<\/script>
 </body>
 </html>`;
 }
@@ -627,9 +537,8 @@ const s=services.find(x=>x.id===id);
 if(!s)return;
 
 const w=window.open("","_blank");
-
 if(!w){
-alert("ब्राउज़र ने पॉपअप रोक दिया है। इस वेबसाइट के लिए Pop-ups Allow करें।");
+alert("पॉपअप ब्लॉक है। ब्राउज़र में Pop-ups Allow करें।");
 return;
 }
 
@@ -638,15 +547,14 @@ w.document.write(receiptHTML(s));
 w.document.close();
 };
 
+/* WHATSAPP BILL */
+
 window.shareBill=function(id){
 const s=services.find(x=>x.id===id);
 if(!s)return;
 
-const amount=Number(s.amount||0);
-const income=Number(s.income||0);
-
 const msg=
-"🏍️ "+SHOP_NAME+
+"🏍️ Rider Bike Care"+
 "\nसर्विस बिल"+
 "\nबिल नंबर: "+(s.billNo||"")+
 "\nग्राहक: "+s.name+
@@ -655,21 +563,24 @@ const msg=
 "\nतारीख: "+s.date+
 "\nपार्ट्स: "+money(s.partsCharge)+
 "\nलेबर: "+money(s.labourCharge)+
-"\nकुल रकम: "+money(amount)+
+"\nकुल रकम: "+money(s.amount)+
 "\nडिस्काउंट: "+money(s.discount)+
-"\nप्राप्त रकम: "+money(income)+
+"\nप्राप्त रकम: "+money(s.income)+
 "\nधन्यवाद!";
 
 const phone=String(s.phone||"").replace(/\D/g,"");
 const whatsapp=phone.length===10?"91"+phone:phone;
 
-window.open(
-"https://wa.me/"+whatsapp+"?text="+encodeURIComponent(msg),
-"_blank"
-);
+if(!whatsapp){
+alert("ग्राहक का मोबाइल नंबर उपलब्ध नहीं है।");
+return;
+}
+
+window.open("https://wa.me/"+whatsapp+"?text="+encodeURIComponent(msg),"_blank");
 };
 
 /* CUSTOMER LIST */
+
 function renderCustomers(){
 const q=$("search").value.trim().toLowerCase();
 
@@ -694,22 +605,25 @@ filtered.map(c=>`
 :"कोई ग्राहक नहीं मिला।";
 }
 
-/* CUSTOMER SERVICE HISTORY */
+window.renderCustomers=renderCustomers;
+
+/* CUSTOMER HISTORY */
+
 window.customerHistory=function(id){
 const c=customers.find(x=>x.id===id);
 if(!c)return;
 
 const records=services.filter(s=>s.customerId===id);
 
-if(!records.length){
-alert(c.name+" की अभी कोई सर्विस हिस्ट्री नहीं है।");
-return;
-}
-
 $("customerList").innerHTML=`
 <button class="gray" onclick="renderCustomers()">⬅ वापस ग्राहक रिकॉर्ड</button>
 <h3>👤 ${escapeHTML(c.name)} की सर्विस हिस्ट्री</h3>
 `;
+
+if(!records.length){
+$("customerList").innerHTML+="<p>अभी कोई सर्विस हिस्ट्री नहीं है।</p>";
+return;
+}
 
 records.slice().reverse().forEach(s=>{
 $("customerList").innerHTML+=`
@@ -722,8 +636,8 @@ $("customerList").innerHTML+=`
 <p>कुल रकम: ${money(s.amount)}</p>
 <p>डिस्काउंट: ${money(s.discount)}</p>
 <b>प्राप्त रकम: ${money(s.income)}</b><br><br>
-<button class="primary" onclick="editService('${s.id}')">✏️ Edit Service</button>
-<button class="red" onclick="deleteService('${s.id}')">🗑️ Delete Service</button>
+<button class="primary" onclick="editService('${s.id}')">✏️ Edit</button>
+<button class="red" onclick="deleteService('${s.id}')">🗑️ Delete</button>
 <button class="green" onclick="viewReceipt('${s.id}')">🧾 रसीद देखें</button>
 <button class="gray" onclick="shareBill('${s.id}')">WhatsApp Bill</button>
 </div>
@@ -732,6 +646,7 @@ $("customerList").innerHTML+=`
 };
 
 /* SERVICE REMINDERS */
+
 function renderReminders(){
 const today=todayDayNumber();
 
@@ -747,17 +662,17 @@ days:dateToDayNumber(s.nextServiceDate)-today
 
 $("reminders").innerHTML=list.length?
 list.map(r=>{
-let status=r.days<0?"overdue":r.days===0?"today":"";
+const status=r.days<0?"overdue":r.days===0?"today":"";
 
-let label=r.days<0?
+const label=r.days<0?
 Math.abs(r.days)+" दिन से सर्विस बाकी":
 r.days===0?"आज सर्विस करानी है":
 r.days+" दिन बाद सर्विस है";
 
-let phone=String(r.c.phone||"").replace(/\D/g,"");
-let whatsapp=phone.length===10?"91"+phone:phone;
+const phone=String(r.c.phone||"").replace(/\D/g,"");
+const whatsapp=phone.length===10?"91"+phone:phone;
 
-let msg="नमस्ते "+r.c.name+
+const msg="नमस्ते "+r.c.name+
 ", आपकी "+r.c.bike+
 " की अगली सर्विस की तारीख "+
 r.s.nextServiceDate+
@@ -765,4 +680,84 @@ r.s.nextServiceDate+
 
 return `
 <div class="reminder ${status}">
-<b>👤 ${es
+<b>👤 ${escapeHTML(r.c.name)}</b>
+<p>🏍️ ${escapeHTML(r.c.bike)}</p>
+<p>📅 अगली सर्विस: ${escapeHTML(r.s.nextServiceDate)}</p>
+<b>${label}</b><br><br>
+<button class="green" onclick="window.open('https://wa.me/${whatsapp}?text=${encodeURIComponent(msg)}','_blank')">WhatsApp Reminder</button>
+</div>
+`;
+}).join("")
+:"<p>अभी कोई सर्विस रिमाइंडर नहीं है।</p>";
+}
+
+/* RECENT SERVICES */
+
+function renderRecent(){
+const recent=services.slice().sort((a,b)=>{
+const da=a.createdAt?.seconds||0;
+const db=b.createdAt?.seconds||0;
+return db-da;
+}).slice(0,5);
+
+$("recent").innerHTML=recent.length?
+recent.map(s=>`
+<div class="item">
+<b>${escapeHTML(s.name)}</b>
+<p>🏍️ ${escapeHTML(s.bike)}</p>
+<p>📅 ${escapeHTML(s.date||"")}</p>
+<p>बिल: ${escapeHTML(s.billNo||"")}</p>
+<b>${money(s.income)}</b><br>
+<button class="green" onclick="viewReceipt('${s.id}')">रसीद देखें</button>
+</div>
+`).join("")
+:"अभी कोई सर्विस नहीं है।";
+}
+
+/* ACCOUNTS */
+
+function renderAccounts(){
+const income=services.reduce((sum,s)=>sum+Number(s.income||0),0);
+const expense=services.reduce((sum,s)=>sum+Number(s.expense||0),0);
+
+$("accountIncome").innerText=money(income);
+$("accountExpense").innerText=money(expense);
+$("accountProfit").innerText=money(income-expense);
+
+$("accountList").innerHTML=services.length?
+services.slice().reverse().map(s=>`
+<div class="item">
+<b>${escapeHTML(s.name)}</b>
+<p>${escapeHTML(s.bike)}</p>
+<p>तारीख: ${escapeHTML(s.date||"")}</p>
+<p>कमाई: ${money(s.income)}</p>
+<p>खर्च: ${money(s.expense)}</p>
+<b>बचत: ${money(Number(s.income||0)-Number(s.expense||0))}</b>
+</div>
+`).join("")
+:"अभी कोई हिसाब उपलब्ध नहीं है।";
+}
+
+/* DASHBOARD */
+
+function renderStats(){
+const income=services.reduce((sum,s)=>sum+Number(s.income||0),0);
+const expense=services.reduce((sum,s)=>sum+Number(s.expense||0),0);
+
+$("totalCustomers").innerText=customers.length;
+$("totalServices").innerText=services.length;
+$("totalIncome").innerText=money(income);
+$("totalExpense").innerText=money(expense);
+}
+
+function renderAll(){
+renderStats();
+renderCustomers();
+renderReminders();
+renderRecent();
+renderAccounts();
+}
+
+</script>
+</body>
+</html>
