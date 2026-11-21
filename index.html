@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Rider Bike Care V7</title>
+<title>Rider Bike Care V8</title>
 <style>
 *{box-sizing:border-box}
 body{margin:0;background:#f1f4f9;font-family:Arial,sans-serif;color:#17243b}
@@ -82,11 +82,13 @@ h3{margin-top:5px}
 <p>अपने सभी ग्राहकों और सर्विस का हिसाब रखें।</p>
 <button class="primary" onclick="showPage('add',document.querySelectorAll('.tabs button')[1])">नया ग्राहक जोड़ें</button>
 </div>
+
 <div class="box">
 <h3>🔔 सर्विस रिमाइंडर</h3>
 <p>अगले 3 दिन में होने वाली और बाकी सर्विस</p>
 <div id="reminders">लोड हो रहा है...</div>
 </div>
+
 <div class="box">
 <h3>📋 हाल की सर्विस</h3>
 <div id="recent">अभी कोई सर्विस नहीं है।</div>
@@ -117,17 +119,21 @@ h3{margin-top:5px}
 </div>
 
 </div>
+
 <footer>© 2026 Rider Bike Care</footer>
 </div>
 
 <script type="module">
 import {initializeApp} from "https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js";
+
 import {
 getAuth,createUserWithEmailAndPassword,signInWithEmailAndPassword,
 signOut,onAuthStateChanged,sendPasswordResetEmail
 } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-auth.js";
+
 import {
-getFirestore,collection,addDoc,getDocs,deleteDoc,doc,serverTimestamp
+getFirestore,collection,addDoc,getDocs,deleteDoc,doc,
+serverTimestamp,updateDoc
 } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js";
 
 const firebaseConfig={
@@ -145,11 +151,14 @@ const auth=getAuth(firebaseApp);
 const db=getFirestore(firebaseApp);
 
 let customers=[],services=[],uid=null;
+
 const SHOP_NAME="Rider Bike Care";
 const SHOP_PHONE="9598480917";
 const $=id=>document.getElementById(id);
 
-function message(text){$("authMessage").innerText=text;}
+function message(text){
+$("authMessage").innerText=text;
+}
 
 function escapeHTML(value){
 return String(value??"").replace(/[&<>"']/g,c=>({
@@ -185,41 +194,69 @@ return "₹"+Number(value||0).toLocaleString("en-IN");
 window.showPage=function(page,button){
 document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));
 $(page).classList.add("active");
+
 document.querySelectorAll(".tabs button").forEach(b=>b.classList.remove("primary"));
+
 if(button)button.classList.add("primary");
 };
 
 window.register=async function(){
-let email=$("email").value.trim(),password=$("password").value;
-if(!email||!password){message("Email और Password डालें");return;}
+let email=$("email").value.trim();
+let password=$("password").value;
+
+if(!email||!password){
+message("Email और Password डालें");
+return;
+}
+
 try{
 await createUserWithEmailAndPassword(auth,email,password);
 message("Account सफलतापूर्वक बन गया!");
-}catch(e){message("Register Error: "+e.message);}
+}catch(e){
+message("Register Error: "+e.message);
+}
 };
 
 window.login=async function(){
-let email=$("email").value.trim(),password=$("password").value;
-if(!email||!password){message("Email और Password डालें");return;}
+let email=$("email").value.trim();
+let password=$("password").value;
+
+if(!email||!password){
+message("Email और Password डालें");
+return;
+}
+
 try{
 message("Login हो रहा है...");
 await signInWithEmailAndPassword(auth,email,password);
 message("Login सफल!");
-}catch(e){message("Login Error: "+e.message);}
+}catch(e){
+message("Login Error: "+e.message);
+}
 };
 
 window.resetPassword=async function(){
 let email=$("email").value.trim();
-if(!email){message("पहले Email डालें");return;}
+
+if(!email){
+message("पहले Email डालें");
+return;
+}
+
 try{
 await sendPasswordResetEmail(auth,email);
 message("Password Reset लिंक Email पर भेज दिया गया है।");
-}catch(e){message("Reset Error: "+e.message);}
+}catch(e){
+message("Reset Error: "+e.message);
+}
 };
 
 window.logout=async function(){
-try{await signOut(auth);}
-catch(e){alert(e.message);}
+try{
+await signOut(auth);
+}catch(e){
+alert(e.message);
+}
 };
 
 onAuthStateChanged(auth,async user=>{
@@ -230,7 +267,9 @@ $("app").classList.remove("hidden");
 $("welcome").innerText="Welcome: "+user.email;
 await loadData();
 }else{
-uid=null;customers=[];services=[];
+uid=null;
+customers=[];
+services=[];
 $("app").classList.add("hidden");
 $("authBox").classList.remove("hidden");
 }
@@ -246,13 +285,18 @@ return collection(db,"users",uid,"services");
 
 async function loadData(){
 if(!uid)return;
+
 try{
 const c=await getDocs(customerRef());
 customers=c.docs.map(d=>({id:d.id,...d.data()}));
+
 const s=await getDocs(serviceRef());
 services=s.docs.map(d=>({id:d.id,...d.data()}));
+
 renderAll();
-}catch(e){alert("Firestore Error: "+e.message);}
+}catch(e){
+alert("Firestore Error: "+e.message);
+}
 }
 
 window.addCustomer=async function(){
@@ -262,21 +306,28 @@ let bike=$("bike").value.trim();
 let number=$("number").value.trim();
 
 if(!name||!bike||!number||!/^[0-9]{10}$/.test(phone)){
-alert("सभी जानकारी सही भरें।");return;
+alert("सभी जानकारी सही भरें।");
+return;
 }
 
 try{
 await addDoc(customerRef(),{
 name,phone,bike,number,createdAt:serverTimestamp()
 });
+
 $("name").value="";
 $("phone").value="";
 $("bike").value="";
 $("number").value="";
+
 alert("ग्राहक सेव हो गया!");
 await loadData();
+
 showPage("list",document.querySelectorAll(".tabs button")[2]);
-}catch(e){alert("Save Error: "+e.message);}
+
+}catch(e){
+alert("Save Error: "+e.message);
+}
 };
 
 window.addService=async function(id){
@@ -285,33 +336,42 @@ if(!c)return;
 
 let partsText=prompt("पार्ट्स का चार्ज लिखें (₹)","0");
 if(partsText===null)return;
+
 let parts=Number(partsText);
 
 let labourText=prompt("लेबर चार्ज लिखें (₹)","0");
 if(labourText===null)return;
+
 let labour=Number(labourText);
 
 let expenseText=prompt("सर्विस का कुल खर्च लिखें (₹)","0");
 if(expenseText===null)return;
+
 let expense=Number(expenseText);
 
 if(!Number.isFinite(parts)||parts<0||
 !Number.isFinite(labour)||labour<0||
 !Number.isFinite(expense)||expense<0||parts+labour<=0){
-alert("पार्ट्स, लेबर और खर्च की रकम सही डालें।");return;
+alert("पार्ट्स, लेबर और खर्च की रकम सही डालें।");
+return;
 }
 
-let amount=parts+labour;
-let nextDate=prompt("अगली सर्विस की तारीख लिखें (YYYY-MM-DD)\nउदाहरण: 2026-12-15\nखाली छोड़ने पर रिमाइंडर नहीं बनेगा।");
+let nextDate=prompt(
+"अगली सर्विस की तारीख लिखें (YYYY-MM-DD)\nउदाहरण: 2026-12-15\nखाली छोड़ने पर रिमाइंडर नहीं बनेगा।"
+);
 
 if(nextDate===null)return;
+
 nextDate=nextDate.trim();
+
 if(nextDate&&!isValidDateString(nextDate)){
-alert("तारीख सही फॉर्मेट में डालें: YYYY-MM-DD");return;
+alert("तारीख सही फॉर्मेट में डालें: YYYY-MM-DD");
+return;
 }
 
 let count=services.filter(s=>s.customerId===id).length+1;
-let discount=count%5===0?Math.round(amount*10)/100:0;
+let discount=count%5===0?Math.round(parts+labour)*10/100:0;
+let amount=parts+labour;
 let finalIncome=amount-discount;
 
 if(!confirm(
@@ -328,17 +388,135 @@ if(!confirm(
 
 try{
 const billNo="RBC-"+Date.now();
+
 await addDoc(serviceRef(),{
-customerId:id,name:c.name,phone:c.phone,bike:c.bike,
-number:c.number,serviceNo:count,billNo,
-partsCharge:parts,labourCharge:labour,amount,
-discount,income:finalIncome,expense,
-nextServiceDate:nextDate,date:todayText(),
+customerId:id,
+name:c.name,
+phone:c.phone,
+bike:c.bike,
+number:c.number,
+serviceNo:count,
+billNo,
+partsCharge:parts,
+labourCharge:labour,
+amount,
+discount,
+income:finalIncome,
+expense,
+nextServiceDate:nextDate,
+date:todayText(),
 createdAt:serverTimestamp()
 });
+
 alert("सर्विस सेव हो गई!\nबिल नंबर: "+billNo);
+
 await loadData();
-}catch(e){alert("Service Error: "+e.message);}
+
+}catch(e){
+alert("Service Error: "+e.message);
+}
+};
+
+/* EDIT SERVICE */
+window.editService=async function(id){
+const s=services.find(x=>x.id===id);
+if(!s)return;
+
+let partsText=prompt("पार्ट्स चार्ज (₹)",String(s.partsCharge??0));
+if(partsText===null)return;
+
+let labourText=prompt(
+"लेबर चार्ज (₹)",
+String(s.labourCharge??s.amount??0)
+);
+if(labourText===null)return;
+
+let expenseText=prompt("सर्विस खर्च (₹)",String(s.expense??0));
+if(expenseText===null)return;
+
+let parts=Number(partsText);
+let labour=Number(labourText);
+let expense=Number(expenseText);
+
+if(![parts,labour,expense].every(v=>Number.isFinite(v)&&v>=0)){
+alert("सही रकम डालें।");
+return;
+}
+
+if(parts+labour<=0){
+alert("पार्ट्स या लेबर चार्ज शून्य से ज्यादा होना चाहिए।");
+return;
+}
+
+let nextDate=prompt(
+"अगली सर्विस की तारीख (YYYY-MM-DD)",
+s.nextServiceDate||""
+);
+
+if(nextDate===null)return;
+nextDate=nextDate.trim();
+
+if(nextDate&&!isValidDateString(nextDate)){
+alert("तारीख YYYY-MM-DD फॉर्मेट में डालें।");
+return;
+}
+
+const amount=parts+labour;
+const discount=Number(s.discount||0);
+const income=amount-discount;
+
+if(income<0){
+alert("डिस्काउंट कुल रकम से अधिक नहीं हो सकता।");
+return;
+}
+
+if(!confirm(
+"क्या इस सर्विस की जानकारी अपडेट करनी है?\n"+
+"नई कुल रकम: "+money(amount)+
+"\nडिस्काउंट: "+money(discount)+
+"\nप्राप्त रकम: "+money(income)
+))return;
+
+try{
+await updateDoc(doc(db,"users",uid,"services",id),{
+partsCharge:parts,
+labourCharge:labour,
+expense:expense,
+amount:amount,
+discount:discount,
+income:income,
+nextServiceDate:nextDate
+});
+
+alert("सर्विस सफलतापूर्वक अपडेट हो गई!");
+await loadData();
+
+}catch(e){
+alert("Update Error: "+e.message);
+}
+};
+
+/* DELETE SERVICE */
+window.deleteService=async function(id){
+const s=services.find(x=>x.id===id);
+if(!s)return;
+
+if(!confirm(
+"क्या आप यह सर्विस रिकॉर्ड हटाना चाहते हैं?\n"+
+"ग्राहक: "+s.name+
+"\nबिल नंबर: "+(s.billNo||"")+
+"\n\nयह रिकॉर्ड हमेशा के लिए हट जाएगा।"
+))return;
+
+try{
+await deleteDoc(doc(db,"users",uid,"services",id));
+
+alert("सर्विस रिकॉर्ड हटा दिया गया!");
+await loadData();
+
+}catch(e){
+alert("Delete Error: "+e.message);
+}
 };
 
 function receiptHTML(s){
@@ -376,43 +554,52 @@ button{padding:12px 18px;background:#1769aa;color:white;border:0;border-radius:8
 <b>मोबाइल: ${SHOP_PHONE}</b>
 <h3>सर्विस रसीद</h3>
 </div>
+
 <p><b>बिल नंबर:</b> ${escapeHTML(billNo)}</p>
 <p><b>तारीख:</b> ${escapeHTML(s.date||"")}</p>
 <hr>
+
 <h3>ग्राहक की जानकारी</h3>
 <p><b>नाम:</b> ${escapeHTML(s.name)}</p>
 <p><b>मोबाइल:</b> ${escapeHTML(s.phone)}</p>
 <p><b>बाइक:</b> ${escapeHTML(s.bike)}</p>
 <p><b>बाइक नंबर:</b> ${escapeHTML(s.number)}</p>
 <hr>
+
 <h3>सर्विस का बिल</h3>
 <div class="line"><span>पार्ट्स चार्ज</span><b>${money(parts)}</b></div>
 <div class="line"><span>लेबर चार्ज</span><b>${money(labour)}</b></div>
 <div class="line"><span>कुल रकम</span><b>${money(amount)}</b></div>
 <div class="line"><span>डिस्काउंट</span><b>${money(discount)}</b></div>
 <div class="line total"><span>कुल भुगतान</span><span>${money(income)}</span></div>
+
 <p class="small">सर्विस नंबर: ${Number(s.serviceNo||1)}</p>
 <hr>
 <p class="center"><b>धन्यवाद! फिर से सेवा का मौका दें।</b></p>
 <p class="center small">${SHOP_NAME} | ${SHOP_PHONE}</p>
 </div>
+
 <div class="center">
 <button id="pdfButton" onclick="downloadPDF()">📥 PDF डाउनलोड करें</button>
 <button onclick="window.print()">प्रिंट करें</button>
 <p id="pdfStatus" class="small"></p>
 </div>
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"><\/script>
 <script>
 async function downloadPDF(){
 const status=document.getElementById("pdfStatus");
 const button=document.getElementById("pdfButton");
 const element=document.getElementById("receipt");
+
 if(typeof html2pdf==="undefined"){
 status.innerText="PDF लाइब्रेरी लोड नहीं हुई। इंटरनेट चालू करके दोबारा खोलें।";
 return;
 }
+
 button.disabled=true;
 status.innerText="PDF तैयार हो रही है...";
+
 try{
 await html2pdf().set({
 margin:8,
@@ -421,7 +608,9 @@ image:{type:"jpeg",quality:0.98},
 html2canvas:{scale:2,useCORS:true,backgroundColor:"#ffffff"},
 jsPDF:{unit:"mm",format:"a4",orientation:"portrait"}
 }).from(element).save();
+
 status.innerText="PDF डाउनलोड हो गई!";
+
 }catch(error){
 status.innerText="PDF नहीं बनी: "+error.message;
 }finally{
@@ -436,11 +625,14 @@ button.disabled=false;
 window.viewReceipt=function(id){
 const s=services.find(x=>x.id===id);
 if(!s)return;
+
 const w=window.open("","_blank");
+
 if(!w){
 alert("ब्राउज़र ने पॉपअप रोक दिया है। इस वेबसाइट के लिए Pop-ups Allow करें।");
 return;
 }
+
 w.document.open();
 w.document.write(receiptHTML(s));
 w.document.close();
@@ -449,8 +641,10 @@ w.document.close();
 window.shareBill=function(id){
 const s=services.find(x=>x.id===id);
 if(!s)return;
+
 const amount=Number(s.amount||0);
 const income=Number(s.income||0);
+
 const msg=
 "🏍️ "+SHOP_NAME+
 "\nसर्विस बिल"+
@@ -468,14 +662,17 @@ const msg=
 
 const phone=String(s.phone||"").replace(/\D/g,"");
 const whatsapp=phone.length===10?"91"+phone:phone;
+
 window.open(
 "https://wa.me/"+whatsapp+"?text="+encodeURIComponent(msg),
 "_blank"
 );
 };
 
+/* CUSTOMER LIST */
 function renderCustomers(){
 const q=$("search").value.trim().toLowerCase();
+
 const filtered=customers.filter(c=>
 [c.name,c.phone,c.bike,c.number].some(v=>
 String(v||"").toLowerCase().includes(q)
@@ -497,22 +694,44 @@ filtered.map(c=>`
 :"कोई ग्राहक नहीं मिला।";
 }
 
+/* CUSTOMER SERVICE HISTORY */
 window.customerHistory=function(id){
 const c=customers.find(x=>x.id===id);
 if(!c)return;
+
 const records=services.filter(s=>s.customerId===id);
+
 if(!records.length){
 alert(c.name+" की अभी कोई सर्विस हिस्ट्री नहीं है।");
 return;
 }
-const details=records.map(s=>
-"\nबिल: "+(s.billNo||"")+
-"\nतारीख: "+(s.date||"")+
-"\nरकम: "+money(s.income)
-).join("\n----------------");
-alert("ग्राहक: "+c.name+details);
+
+$("customerList").innerHTML=`
+<button class="gray" onclick="renderCustomers()">⬅ वापस ग्राहक रिकॉर्ड</button>
+<h3>👤 ${escapeHTML(c.name)} की सर्विस हिस्ट्री</h3>
+`;
+
+records.slice().reverse().forEach(s=>{
+$("customerList").innerHTML+=`
+<div class="item">
+<b>🏍️ ${escapeHTML(s.bike)}</b>
+<p>बिल नंबर: ${escapeHTML(s.billNo||"")}</p>
+<p>तारीख: ${escapeHTML(s.date||"")}</p>
+<p>पार्ट्स: ${money(s.partsCharge)}</p>
+<p>लेबर: ${money(s.labourCharge??s.amount??0)}</p>
+<p>कुल रकम: ${money(s.amount)}</p>
+<p>डिस्काउंट: ${money(s.discount)}</p>
+<b>प्राप्त रकम: ${money(s.income)}</b><br><br>
+<button class="primary" onclick="editService('${s.id}')">✏️ Edit Service</button>
+<button class="red" onclick="deleteService('${s.id}')">🗑️ Delete Service</button>
+<button class="green" onclick="viewReceipt('${s.id}')">🧾 रसीद देखें</button>
+<button class="gray" onclick="shareBill('${s.id}')">WhatsApp Bill</button>
+</div>
+`;
+});
 };
 
+/* SERVICE REMINDERS */
 function renderReminders(){
 const today=todayDayNumber();
 
@@ -529,6 +748,7 @@ days:dateToDayNumber(s.nextServiceDate)-today
 $("reminders").innerHTML=list.length?
 list.map(r=>{
 let status=r.days<0?"overdue":r.days===0?"today":"";
+
 let label=r.days<0?
 Math.abs(r.days)+" दिन से सर्विस बाकी":
 r.days===0?"आज सर्विस करानी है":
@@ -545,55 +765,4 @@ r.s.nextServiceDate+
 
 return `
 <div class="reminder ${status}">
-<b>👤 ${escapeHTML(r.c.name)}</b>
-<p>🏍️ ${escapeHTML(r.c.bike)}</p>
-<p>📞 ${escapeHTML(r.c.phone)}</p>
-<p>📅 तारीख: ${escapeHTML(r.s.nextServiceDate)}</p>
-<b>${label}</b><br><br>
-${whatsapp?
-`<button class="green" onclick="sendReminder('${whatsapp}','${encodeURIComponent(msg)}')">WhatsApp Reminder</button>`:
-"<p>मोबाइल नंबर उपलब्ध नहीं है।</p>"}
-</div>`;
-}).join("")
-:"अभी कोई रिमाइंडर नहीं है।";
-}
-
-window.sendReminder=function(phone,encodedMsg){
-window.open("https://wa.me/"+phone+"?text="+encodedMsg,"_blank");
-};
-
-function renderAll(){
-$("totalCustomers").innerText=customers.length;
-$("totalServices").innerText=services.length;
-
-let income=services.reduce((a,s)=>a+Number(s.income||0),0);
-let exp=services.reduce((a,s)=>a+Number(s.expense||0),0);
-
-$("totalIncome").innerText=money(income);
-$("totalExpense").innerText=money(exp);
-
-renderCustomers();
-renderReminders();
-
-$("recent").innerHTML=services.length?
-services.slice().reverse().slice(0,5).map(s=>`
-<div class="item">
-<b>👤 ${escapeHTML(s.name)}</b>
-<p>🏍️ ${escapeHTML(s.bike)}</p>
-<p>🔢 ${escapeHTML(s.number)}</p>
-<p>📅 ${escapeHTML(s.date||"")}</p>
-<p>पार्ट्स: ${money(s.partsCharge||0)}</p>
-<p>लेबर: ${money(s.labourCharge??s.amount??0)}</p>
-<p>डिस्काउंट: ${money(s.discount||0)}</p>
-<b>प्राप्त रकम: ${money(s.income||0)}</b><br><br>
-<button class="green" onclick="viewReceipt('${s.id}')">🧾 रसीद देखें</button>
-<button class="gray" onclick="shareBill('${s.id}')">WhatsApp बिल</button>
-</div>
-`).join("")
-:"अभी कोई सर्विस नहीं है।";
-}
-
-</script>
-</body>
-  </html>
-  
+<b>👤 ${es
