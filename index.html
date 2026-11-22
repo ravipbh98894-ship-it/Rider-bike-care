@@ -76,6 +76,7 @@ h3{margin-top:5px}
 
 <div class="tabs">
 <button onclick="showPage('home',this)" class="primary">🏠 होम</button>
+  <button onclick="showStockPage()">🔧 Spare Parts Stock</button>
 <button onclick="showPage('add',this)">➕ ग्राहक जोड़ें</button>
 <button onclick="showPage('list',this)">👥 रिकॉर्ड</button>
 <button onclick="logout()">Logout</button>
@@ -824,5 +825,143 @@ services.slice().reverse().slice(0,5).map(s=>`
 }
 
 </script>
+  
+<!-- SPARE PARTS STOCK MANAGEMENT -->
+<section id="stockSection" style="display:none;padding:15px;background:#f1f4f9;">
+  <h2>🔧 Spare Parts Stock</h2>
+
+  <input id="partName" placeholder="पार्ट का नाम" style="width:100%;padding:12px;margin:5px 0;">
+  <input id="partCompany" placeholder="कंपनी का नाम" style="width:100%;padding:12px;margin:5px 0;">
+  <input id="partBuy" type="number" placeholder="खरीद मूल्य" style="width:100%;padding:12px;margin:5px 0;">
+  <input id="partSell" type="number" placeholder="बिक्री मूल्य" style="width:100%;padding:12px;margin:5px 0;">
+  <input id="partQty" type="number" placeholder="कितनी मात्रा है?" style="width:100%;padding:12px;margin:5px 0;">
+
+  <button onclick="addStockPart()" style="padding:12px;background:#142b50;color:white;border:0;border-radius:6px;width:100%;margin:8px 0;">
+    + पार्ट स्टॉक में जोड़ें
+  </button>
+
+  <h3>स्टॉक की सूची</h3>
+  <div id="stockList"></div>
+</section>
+
+<script>
+let spareParts = JSON.parse(localStorage.getItem("riderSpareParts") || "[]");
+let purchaseHistory = JSON.parse(localStorage.getItem("riderPurchaseHistory") || "[]");
+function addStockPart() {
+  const name = document.getElementById("partName").value.trim();
+  const company = document.getElementById("partCompany").value.trim();
+  const buy = Number(document.getElementById("partBuy").value);
+  const sell = Number(document.getElementById("partSell").value);
+  const qty = Number(document.getElementById("partQty").value);
+
+  if (!name || !company || buy <= 0 || sell <= 0 || qty <= 0) {
+    alert("सभी जानकारी सही-सही भरें");
+    return;
+  }
+
+  spareParts.push({name, company, buy, sell, qty});
+  localStorage.setItem("riderSpareParts", JSON.stringify(spareParts));
+
+  ["partName","partCompany","partBuy","partSell","partQty"].forEach(id => {
+    document.getElementById(id).value = "";
+  });
+
+  showStockParts();
+}
+
+function showStockPage() {
+  document.getElementById("stockSection").style.display = "block";
+  document.getElementById("stockSection").scrollIntoView({behavior:"smooth"});
+}
+
+
+
+function changeStock(index, amount) {
+  if (amount < 0 && spareParts[index].qty <= 0) {
+    alert("स्टॉक खत्म हो गया है!");
+    return;
+  }
+
+  spareParts[index].qty += amount;
+
+  if (amount > 0) {
+    purchaseHistory.push({
+      name: spareParts[index].name,
+      company: spareParts[index].company,
+      qty: amount,
+      buy: spareParts[index].buy,
+      total: spareParts[index].buy * amount,
+      date: new Date().toLocaleString("hi-IN")
+    });
+
+    localStorage.setItem("riderPurchaseHistory", JSON.stringify(purchaseHistory));
+  }
+
+  localStorage.setItem("riderSpareParts", JSON.stringify(spareParts));
+  showStockParts();
+}
+
+function showStockParts() {
+  const list = document.getElementById("stockList");
+  list.innerHTML = "";
+
+  const totalQty = spareParts.reduce((sum, part) => sum + Number(part.qty), 0);
+  const totalValue = spareParts.reduce((sum, part) => sum + (Number(part.buy) * Number(part.qty)), 0);
+  const lowStockParts = spareParts.filter(part => Number(part.qty) <= 3);
+
+  list.innerHTML = `
+    <div style="background:#142b50;color:white;padding:15px;border-radius:10px;margin-bottom:12px;">
+      <h3>📦 कुल स्टॉक: ${totalQty} पार्ट</h3>
+      <h3>💰 कुल स्टॉक कीमत: ₹${totalValue}</h3>
+    </div>
+  `;
+
+  list.innerHTML += `
+    <input type="text" id="stockSearch"
+    placeholder="🔍 पार्ट का नाम खोजें..."
+    oninput="searchStockParts()"
+    style="width:100%;padding:12px;margin:10px 0;border:1px solid #ccc;border-radius:8px;">
+  `;
+
+  list.innerHTML += `
+    <div style="background:#fff3cd;color:#856404;padding:12px;margin:10px 0;border-radius:8px;">
+      <h3>⚠️ Low Stock Report</h3>
+      <h3>कम स्टॉक वाले पार्ट: ${lowStockParts.length}</h3>
+      ${lowStockParts.map(part => `<p>🔧 ${part.name} - मात्रा: ${part.qty}</p>`).join("")}
+    </div>
+  `;
+
+  spareParts.forEach((part, index) => {
+    const lowStock = part.qty <= 3;
+
+    list.innerHTML += `
+      <div class="stockPartCard" style="background:white;padding:12px;margin:8px 0;border-radius:8px;border-left:5px solid ${lowStock ? 'red' : 'green'};">
+        <b>${part.name}</b><br>
+        कंपनी: ${part.company}<br>
+        खरीद: ₹${part.buy} | बिक्री: ₹${part.sell}<br>
+        मात्रा: ${part.qty}<br>
+        ${lowStock ? '<b style="color:red;">⚠️ LOW STOCK ALERT! माल कम है</b>' : '<b style="color:green;">✓ स्टॉक उपलब्ध है</b>'}
+        <br><br>
+        <button onclick="changeStock(${index},-1)" style="padding:10px;background:#dc3545;color:white;border:0;border-radius:5px;">➖ बिक्री</button>
+        <button onclick="changeStock(${index},1)" style="padding:10px;background:#198754;color:white;border:0;border-radius:5px;">➕ खरीद</button>
+      </div>`;
+  });
+}
+
+function searchStockParts() {
+  const search = document.getElementById("stockSearch").value.toLowerCase();
+  const items = document.querySelectorAll(".stockPartCard");
+
+  items.forEach(item => {
+    item.style.display = item.innerText.toLowerCase().includes(search) ? "block" : "none";
+  });
+}
+
+showStockParts();
+
+
+
+</script>
+
 </body>
 </html>
