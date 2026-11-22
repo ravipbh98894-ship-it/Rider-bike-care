@@ -25,10 +25,13 @@ button.primary{background:#1769aa;color:white}
 button.green{background:#079768;color:white}
 button.gray{background:#64748b;color:white}
 button.red{background:#dc3545;color:white}
+button:disabled{opacity:.5}
 input{width:100%;padding:12px;border:1px solid #cbd5e1;border-radius:8px;margin:7px 0 13px;font-size:15px}
 label{font-weight:bold;font-size:14px}
 .page{display:none}
 .page.active{display:block}
+#stockSection{display:none}
+#stockSection.active{display:block}
 .stats{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
 .stat{background:#fff;padding:15px;border-radius:10px;box-shadow:0 2px 8px #0001}
 .stat p{margin:0 0 7px;color:#64748b;font-size:13px}
@@ -37,10 +40,12 @@ label{font-weight:bold;font-size:14px}
 .item p,.reminder p{margin:6px 0;font-size:14px}
 .reminder.overdue{border-left:5px solid #dc3545}
 .reminder.today{border-left:5px solid #e59a16}
+.stockPartCard{background:white;padding:14px;margin:10px 0;border-radius:10px;border:1px solid #e2e8f0}
 footer{text-align:center;padding:20px;color:#64748b}
 h3{margin-top:5px}
-#stockSection{display:none}
-.stockPartCard{background:white;padding:12px;margin:8px 0;border-radius:8px}
+.stockSummary{background:#142b50;color:white;padding:15px;border-radius:10px;margin-bottom:12px}
+.stockSummary h3{margin:5px 0}
+.lowBox{background:#fff3cd;color:#856404;padding:12px;margin:10px 0;border-radius:8px}
 @media(min-width:600px){.stats{grid-template-columns:repeat(4,1fr)}}
 </style>
 </head>
@@ -84,6 +89,7 @@ h3{margin-top:5px}
 <button onclick="logout()">Logout</button>
 </div>
 
+<!-- HOME -->
 <div id="home" class="page active">
 <div class="box">
 <h3>🏍️ Rider Bike Care Dashboard</h3>
@@ -103,6 +109,7 @@ h3{margin-top:5px}
 </div>
 </div>
 
+<!-- ADD CUSTOMER -->
 <div id="add" class="page">
 <div class="box">
 <h3>👤 नया ग्राहक</h3>
@@ -118,6 +125,7 @@ h3{margin-top:5px}
 </div>
 </div>
 
+<!-- CUSTOMER LIST -->
 <div id="list" class="page">
 <div class="box">
 <h3>👥 ग्राहक रिकॉर्ड</h3>
@@ -126,17 +134,36 @@ h3{margin-top:5px}
 </div>
 </div>
 
+<!-- SPARE PARTS -->
 <div id="stockSection" class="page">
 <div class="box">
-<h3>🔧 Spare Parts Stock</h3>
-<input id="partName" placeholder="पार्ट का नाम">
-<input id="partCompany" placeholder="कंपनी का नाम">
-<input id="partBuy" type="number" placeholder="खरीद मूल्य">
-<input id="partSell" type="number" placeholder="बिक्री मूल्य">
-<input id="partQty" type="number" placeholder="कितनी मात्रा है?">
-<button class="primary" onclick="addStockPart()">+ पार्ट स्टॉक में जोड़ें</button>
-<h3>स्टॉक की सूची</h3>
+<h3>🔧 Spare Parts / Stock Management</h3>
+<p>अपने दुकान के सभी पार्ट्स का हिसाब रखें।</p>
+
+<label>पार्ट का नाम</label>
+<input id="partName" placeholder="जैसे Engine Oil, Brake Shoe">
+
+<label>कंपनी का नाम</label>
+<input id="partCompany" placeholder="जैसे Hero, Bajaj, TVS">
+
+<label>खरीद मूल्य (₹)</label>
+<input id="partBuy" type="number" min="0" placeholder="खरीद मूल्य">
+
+<label>बिक्री मूल्य (₹)</label>
+<input id="partSell" type="number" min="0" placeholder="बिक्री मूल्य">
+
+<label>कितनी मात्रा है?</label>
+<input id="partQty" type="number" min="1" placeholder="मात्रा">
+
+<button class="primary" onclick="addStockPart()">➕ पार्ट स्टॉक में जोड़ें</button>
+
+<hr>
+<h3>📦 Stock Management</h3>
 <div id="stockList"></div>
+
+<hr>
+<h3>📋 खरीदारी का इतिहास</h3>
+<div id="purchaseList"></div>
 </div>
 </div>
 
@@ -149,13 +176,14 @@ h3{margin-top:5px}
 import {initializeApp} from "https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js";
 
 import {
-getAuth,createUserWithEmailAndPassword,signInWithEmailAndPassword,
-signOut,onAuthStateChanged,sendPasswordResetEmail
+getAuth,createUserWithEmailAndPassword,
+signInWithEmailAndPassword,signOut,
+onAuthStateChanged,sendPasswordResetEmail
 } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-auth.js";
 
 import {
-getFirestore,collection,addDoc,getDocs,deleteDoc,doc,
-serverTimestamp,updateDoc
+getFirestore,collection,addDoc,getDocs,
+deleteDoc,doc,serverTimestamp,updateDoc
 } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js";
 
 const firebaseConfig={
@@ -181,9 +209,7 @@ const SHOP_PHONE="9598489017";
 
 const $=id=>document.getElementById(id);
 
-function message(text){
-$("authMessage").innerText=text;
-}
+function message(text){$("authMessage").innerText=text;}
 
 function escapeHTML(value){
 return String(value??"").replace(/[&<>"']/g,c=>({
@@ -216,27 +242,45 @@ function money(value){
 return "₹"+Number(value||0).toLocaleString("en-IN");
 }
 
+/* PAGE NAVIGATION */
 window.showPage=function(page,button){
-document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));
+document.querySelectorAll(".page").forEach(p=>{
+p.classList.remove("active");
+});
 $(page).classList.add("active");
-document.querySelectorAll(".tabs button").forEach(b=>b.classList.remove("primary"));
+
+document.querySelectorAll(".tabs button").forEach(b=>{
+b.classList.remove("primary");
+});
 if(button)button.classList.add("primary");
+
 window.scrollTo({top:0,behavior:"smooth"});
 };
 
+/* SPARE PARTS PAGE NAVIGATION - FIXED */
 window.showStockPage=function(){
-document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));
-$("stockSection").classList.add("active");
-document.querySelectorAll(".tabs button").forEach(b=>b.classList.remove("primary"));
+document.querySelectorAll(".page").forEach(p=>{
+p.classList.remove("active");
+});
+
+const stock=$("stockSection");
+stock.classList.add("active");
+
+document.querySelectorAll(".tabs button").forEach(b=>{
+b.classList.remove("primary");
+});
 document.querySelectorAll(".tabs button")[1].classList.add("primary");
+
 showStockParts();
 window.scrollTo({top:0,behavior:"smooth"});
 };
 
+/* AUTHENTICATION */
 window.register=async function(){
 let email=$("email").value.trim();
 let password=$("password").value;
 if(!email||!password){message("Email और Password डालें");return;}
+
 try{
 await createUserWithEmailAndPassword(auth,email,password);
 message("Account सफलतापूर्वक बन गया!");
@@ -247,6 +291,7 @@ window.login=async function(){
 let email=$("email").value.trim();
 let password=$("password").value;
 if(!email||!password){message("Email और Password डालें");return;}
+
 try{
 message("Login हो रहा है...");
 await signInWithEmailAndPassword(auth,email,password);
@@ -257,6 +302,7 @@ message("Login सफल!");
 window.resetPassword=async function(){
 let email=$("email").value.trim();
 if(!email){message("पहले Email डालें");return;}
+
 try{
 await sendPasswordResetEmail(auth,email);
 message("Password Reset लिंक Email पर भेज दिया गया है।");
@@ -287,7 +333,6 @@ $("authBox").classList.remove("hidden");
 function customerRef(){
 return collection(db,"users",uid,"customers");
 }
-
 function serviceRef(){
 return collection(db,"users",uid,"services");
 }
@@ -297,12 +342,15 @@ if(!uid)return;
 try{
 const c=await getDocs(customerRef());
 customers=c.docs.map(d=>({id:d.id,...d.data()}));
+
 const s=await getDocs(serviceRef());
 services=s.docs.map(d=>({id:d.id,...d.data()}));
+
 renderAll();
 }catch(e){alert("Firestore Error: "+e.message);}
 }
 
+/* ADD CUSTOMER */
 window.addCustomer=async function(){
 let name=$("name").value.trim();
 let phone=$("phone").value.trim();
@@ -318,16 +366,19 @@ try{
 await addDoc(customerRef(),{
 name,phone,bike,number,createdAt:serverTimestamp()
 });
-$("name").value="";
-$("phone").value="";
-$("bike").value="";
-$("number").value="";
+
+["name","phone","bike","number"].forEach(id=>{
+$(id).value="";
+});
+
 alert("ग्राहक सेव हो गया!");
 await loadData();
 showPage("list",document.querySelectorAll(".tabs button")[3]);
+
 }catch(e){alert("Save Error: "+e.message);}
 };
 
+/* ADD SERVICE */
 window.addService=async function(id){
 let c=customers.find(x=>x.id===id);
 if(!c)return;
@@ -352,7 +403,7 @@ return;
 }
 
 let nextDate=prompt(
-"अगली सर्विस की तारीख लिखें (YYYY-MM-DD)\nउदाहरण: 2026-12-15\nखाली छोड़ने पर रिमाइंडर नहीं बनेगा।"
+"अगली सर्विस की तारीख (YYYY-MM-DD)\nखाली छोड़ने पर रिमाइंडर नहीं बनेगा।"
 );
 if(nextDate===null)return;
 nextDate=nextDate.trim();
@@ -381,14 +432,20 @@ if(!confirm(
 
 try{
 const billNo="RBC-"+Date.now();
+
 await addDoc(serviceRef(),{
-customerId:id,name:c.name,phone:c.phone,bike:c.bike,number:c.number,
-serviceNo:count,billNo,partsCharge:parts,labourCharge:labour,
-amount,discount,income:finalIncome,expense,nextServiceDate:nextDate,
+customerId:id,name:c.name,phone:c.phone,
+bike:c.bike,number:c.number,
+serviceNo:count,billNo,
+partsCharge:parts,labourCharge:labour,
+amount,discount,income:finalIncome,
+expense,nextServiceDate:nextDate,
 date:todayText(),createdAt:serverTimestamp()
 });
+
 alert("सर्विस सेव हो गई!\nबिल नंबर: "+billNo);
 await loadData();
+
 }catch(e){alert("Service Error: "+e.message);}
 };
 
@@ -399,34 +456,51 @@ if(!s)return;
 
 let partsText=prompt("पार्ट्स चार्ज (₹)",String(s.partsCharge??0));
 if(partsText===null)return;
+
 let labourText=prompt("लेबर चार्ज (₹)",String(s.labourCharge??s.amount??0));
 if(labourText===null)return;
+
 let expenseText=prompt("सर्विस खर्च (₹)",String(s.expense??0));
 if(expenseText===null)return;
 
-let parts=Number(partsText),labour=Number(labourText),expense=Number(expenseText);
+let parts=Number(partsText);
+let labour=Number(labourText);
+let expense=Number(expenseText);
+
 if(![parts,labour,expense].every(v=>Number.isFinite(v)&&v>=0)){
 alert("सही रकम डालें।");return;
 }
-if(parts+labour<=0){alert("पार्ट्स या लेबर चार्ज शून्य से ज्यादा होना चाहिए।");return;}
+if(parts+labour<=0){
+alert("पार्ट्स या लेबर चार्ज शून्य से ज्यादा होना चाहिए।");
+return;
+}
 
 let nextDate=prompt("अगली सर्विस की तारीख (YYYY-MM-DD)",s.nextServiceDate||"");
 if(nextDate===null)return;
 nextDate=nextDate.trim();
-if(nextDate&&!isValidDateString(nextDate)){alert("तारीख YYYY-MM-DD फॉर्मेट में डालें।");return;}
+
+if(nextDate&&!isValidDateString(nextDate)){
+alert("तारीख YYYY-MM-DD फॉर्मेट में डालें।");
+return;
+}
 
 const amount=parts+labour;
 const discount=Number(s.discount||0);
 const income=amount-discount;
+
 if(income<0){alert("डिस्काउंट कुल रकम से अधिक नहीं हो सकता।");return;}
 
-if(!confirm("क्या इस सर्विस की जानकारी अपडेट करनी है?\nनई कुल रकम: "+money(amount)+"\nडिस्काउंट: "+money(discount)+"\nप्राप्त रकम: "+money(income)))return;
+if(!confirm("क्या इस सर्विस की जानकारी अपडेट करनी है?\nनई कुल रकम: "+money(amount))){
+return;
+}
 
 try{
 await updateDoc(doc(db,"users",uid,"services",id),{
-partsCharge:parts,labourCharge:labour,expense,amount,discount,income,nextServiceDate:nextDate
+partsCharge:parts,labourCharge:labour,
+expense,amount,discount,income,
+nextServiceDate:nextDate
 });
-alert("सर्विस सफलतापूर्वक अपडेट हो गई!");
+alert("सर्विस अपडेट हो गई!");
 await loadData();
 }catch(e){alert("Update Error: "+e.message);}
 };
@@ -435,7 +509,9 @@ await loadData();
 window.deleteService=async function(id){
 const s=services.find(x=>x.id===id);
 if(!s)return;
-if(!confirm("क्या आप यह सर्विस रिकॉर्ड हटाना चाहते हैं?\nग्राहक: "+s.name+"\nबिल नंबर: "+(s.billNo||"")+"\n\nयह रिकॉर्ड हमेशा के लिए हट जाएगा।"))return;
+
+if(!confirm("क्या आप यह सर्विस रिकॉर्ड हटाना चाहते हैं?\nग्राहक: "+s.name+"\nयह हमेशा के लिए हट जाएगा।"))return;
+
 try{
 await deleteDoc(doc(db,"users",uid,"services",id));
 alert("सर्विस रिकॉर्ड हटा दिया गया!");
@@ -450,7 +526,7 @@ const labour=Number(s.labourCharge??s.amount??s.income??0);
 const amount=Number(s.amount??(parts+labour));
 const discount=Number(s.discount||0);
 const income=Number(s.income??(amount-discount));
-const billNo=s.billNo||("RBC-OLD-"+String(s.id).slice(0,8));
+const billNo=s.billNo||"RBC-OLD";
 
 return `<!DOCTYPE html>
 <html lang="hi">
@@ -459,16 +535,15 @@ return `<!DOCTYPE html>
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>रसीद ${escapeHTML(billNo)}</title>
 <style>
-body{font-family:Arial,sans-serif;color:#17243b;padding:15px;max-width:600px;margin:auto}
-.receipt{border:2px solid #1769aa;border-radius:12px;padding:20px;background:white}
+body{font-family:Arial;color:#17243b;padding:15px;max-width:600px;margin:auto}
+.receipt{border:2px solid #1769aa;border-radius:12px;padding:20px}
 .head{text-align:center;border-bottom:2px solid #1769aa;padding-bottom:12px}
-.head h2{margin:5px;color:#1769aa}
+.head h2{color:#1769aa}
 .center{text-align:center}
-.line{display:flex;justify-content:space-between;gap:10px;padding:10px 0;border-bottom:1px solid #ddd}
+.line{display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid #ddd}
 .total{font-size:20px;font-weight:bold;color:#079768}
-.small{font-size:13px;color:#64748b}
-button{padding:12px 18px;background:#1769aa;color:white;border:0;border-radius:8px;margin:10px 3px}
-@media print{button{display:none}body{padding:0}.receipt{border:1px solid #333}}
+button{padding:12px;background:#1769aa;color:white;border:0;border-radius:8px;margin:10px}
+@media print{button{display:none}}
 </style>
 </head>
 <body>
@@ -476,68 +551,34 @@ button{padding:12px 18px;background:#1769aa;color:white;border:0;border-radius:8
 <div class="head">
 <h2>🏍️ ${SHOP_NAME}</h2>
 <p>बाइक रिपेयर एवं सर्विस सेंटर</p>
-<p><b>Prop.:</b> ${SHOP_OWNER}</p>
-<p><b>Address:</b> ${SHOP_ADDRESS}</p>
-<p><b>Mobile:</b> ${SHOP_PHONE}</p>
+<p>Prop.: ${SHOP_OWNER}</p>
+<p>Address: ${SHOP_ADDRESS}</p>
+<p>Mobile: ${SHOP_PHONE}</p>
 <h3>🧾 सर्विस रसीद</h3>
 </div>
 
 <p><b>बिल नंबर:</b> ${escapeHTML(billNo)}</p>
 <p><b>तारीख:</b> ${escapeHTML(s.date||"")}</p>
 <hr>
-
 <h3>ग्राहक की जानकारी</h3>
-<p><b>नाम:</b> ${escapeHTML(s.name)}</p>
-<p><b>मोबाइल:</b> ${escapeHTML(s.phone)}</p>
-<p><b>बाइक:</b> ${escapeHTML(s.bike)}</p>
-<p><b>बाइक नंबर:</b> ${escapeHTML(s.number)}</p>
+<p>नाम: ${escapeHTML(s.name)}</p>
+<p>मोबाइल: ${escapeHTML(s.phone)}</p>
+<p>बाइक: ${escapeHTML(s.bike)}</p>
+<p>बाइक नंबर: ${escapeHTML(s.number)}</p>
 <hr>
-
 <h3>सर्विस का बिल</h3>
 <div class="line"><span>पार्ट्स चार्ज</span><b>${money(parts)}</b></div>
 <div class="line"><span>लेबर चार्ज</span><b>${money(labour)}</b></div>
 <div class="line"><span>कुल रकम</span><b>${money(amount)}</b></div>
 <div class="line"><span>डिस्काउंट</span><b>${money(discount)}</b></div>
 <div class="line total"><span>कुल भुगतान</span><span>${money(income)}</span></div>
-
-<p class="small">सर्विस नंबर: ${Number(s.serviceNo||1)}</p>
+<p>सर्विस नंबर: ${Number(s.serviceNo||1)}</p>
 <hr>
 <p class="center"><b>धन्यवाद! फिर से सेवा का मौका दें।</b></p>
-<p class="center small">${SHOP_NAME} | ${SHOP_PHONE}</p>
 </div>
-
 <div class="center">
-<button id="pdfButton" onclick="downloadPDF()">📥 PDF डाउनलोड करें</button>
-<button onclick="window.print()">प्रिंट करें</button>
-<p id="pdfStatus" class="small"></p>
+<button onclick="window.print()">🖨️ प्रिंट / PDF सेव करें</button>
 </div>
-
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"><\/script>
-<script>
-async function downloadPDF(){
-const status=document.getElementById("pdfStatus");
-const button=document.getElementById("pdfButton");
-const element=document.getElementById("receipt");
-if(typeof html2pdf==="undefined"){
-status.innerText="PDF लाइब्रेरी लोड नहीं हुई। इंटरनेट चालू करके दोबारा खोलें।";
-return;
-}
-button.disabled=true;
-status.innerText="PDF तैयार हो रही है...";
-try{
-await html2pdf().set({
-margin:8,
-filename:${JSON.stringify("Rider-Bike-Care-"+billNo+".pdf")},
-image:{type:"jpeg",quality:0.98},
-html2canvas:{scale:2,useCORS:true,backgroundColor:"#ffffff"},
-jsPDF:{unit:"mm",format:"a4",orientation:"portrait"}
-}).from(element).save();
-status.innerText="PDF डाउनलोड हो गई!";
-}catch(error){
-status.innerText="PDF नहीं बनी: "+error.message;
-}finally{button.disabled=false;}
-}
-<\/script>
 </body>
 </html>`;
 }
@@ -545,8 +586,12 @@ status.innerText="PDF नहीं बनी: "+error.message;
 window.viewReceipt=function(id){
 const s=services.find(x=>x.id===id);
 if(!s)return;
+
 const w=window.open("","_blank");
-if(!w){alert("ब्राउज़र ने पॉपअप रोक दिया है। इस वेबसाइट के लिए Pop-ups Allow करें।");return;}
+if(!w){
+alert("ब्राउज़र ने पॉपअप रोक दिया है। Pop-ups Allow करें।");
+return;
+}
 w.document.open();
 w.document.write(receiptHTML(s));
 w.document.close();
@@ -576,15 +621,18 @@ const msg=
 
 const phone=String(s.phone||"").replace(/\D/g,"");
 const whatsapp=phone.length===10?"91"+phone:phone;
+
 window.open("https://wa.me/"+whatsapp+"?text="+encodeURIComponent(msg),"_blank");
 };
 
 /* CUSTOMER LIST */
 function renderCustomers(){
 const q=$("search").value.trim().toLowerCase();
+
 const filtered=customers.filter(c=>
-[c.name,c.phone,c.bike,c.number].some(v=>String(v||"").toLowerCase().includes(q))
-);
+[c.name,c.phone,c.bike,c.number].some(v=>
+String(v||"").toLowerCase().includes(q)
+));
 
 $("customerList").innerHTML=filtered.length?
 filtered.map(c=>`
@@ -605,8 +653,13 @@ window.renderCustomers=renderCustomers;
 window.customerHistory=function(id){
 const c=customers.find(x=>x.id===id);
 if(!c)return;
+
 const records=services.filter(s=>s.customerId===id);
-if(!records.length){alert(c.name+" की अभी कोई सर्विस हिस्ट्री नहीं है।");return;}
+
+if(!records.length){
+alert(c.name+" की अभी कोई सर्विस हिस्ट्री नहीं है।");
+return;
+}
 
 $("customerList").innerHTML=`
 <button class="gray" onclick="renderCustomers()">⬅ वापस ग्राहक रिकॉर्ड</button>
@@ -634,47 +687,65 @@ $("customerList").innerHTML+=`
 /* SERVICE REMINDERS */
 function renderReminders(){
 const today=todayDayNumber();
+
 const list=services
 .filter(s=>s.nextServiceDate&&isValidDateString(s.nextServiceDate))
-.map(s=>({s,c:customers.find(c=>c.id===s.customerId),days:dateToDayNumber(s.nextServiceDate)-today}))
+.map(s=({
+s,c:customers.find(c=>c.id===s.customerId),
+days:dateToDayNumber(s.nextServiceDate)-today
+}))
 .filter(r=>r.c&&r.days<=3)
 .sort((a,b)=>a.days-b.days);
 
 $("reminders").innerHTML=list.length?
 list.map(r=>{
 let status=r.days<0?"overdue":r.days===0?"today":"";
-let label=r.days<0?Math.abs(r.days)+" दिन से सर्विस बाकी":r.days===0?"आज सर्विस करानी है":r.days+" दिन बाद सर्विस है";
+let label=r.days<0?
+Math.abs(r.days)+" दिन से सर्विस बाकी":
+r.days===0?"आज सर्विस करानी है":
+r.days+" दिन बाद सर्विस है";
+
 let phone=String(r.c.phone||"").replace(/\D/g,"");
 let whatsapp=phone.length===10?"91"+phone:phone;
-let msg="नमस्ते "+r.c.name+", आपकी "+r.c.bike+" की अगली सर्विस की तारीख "+r.s.nextServiceDate+" है। कृपया Rider Bike Care पर संपर्क करें।";return `
+
+  let msg="नमस्ते "+r.c.name+", आपकी "+r.c.bike+
+" की अगली सर्विस की तारीख "+r.s.nextServiceDate+
+" है। कृपया Rider Bike Care पर संपर्क करें।";
+
+return `
 <div class="reminder ${status}">
 <b>👤 ${escapeHTML(r.c.name)}</b>
 <p>🏍️ ${escapeHTML(r.c.bike)}</p>
 <p>📞 ${escapeHTML(r.c.phone)}</p>
 <p>📅 तारीख: ${escapeHTML(r.s.nextServiceDate)}</p>
 <b>${label}</b><br><br>
-${whatsapp?`<button class="green" onclick="sendReminder('${whatsapp}','${encodeURIComponent(msg)}')">WhatsApp Reminder</button>`:"<p>मोबाइल नंबर उपलब्ध नहीं है।</p>"}
+${whatsapp?
+`<button class="green" onclick="sendReminder('${whatsapp}','${encodeURIComponent(msg)}')">WhatsApp Reminder</button>`:
+"<p>मोबाइल नंबर उपलब्ध नहीं है।</p>"}
 </div>`;
 }).join("")
-:"अभी कोई रिमाइंडर नहीं है।";}
+:"अभी कोई रिमाइंडर नहीं है।";
+}
 
 window.sendReminder=function(phone,encodedMsg){
 window.open("https://wa.me/"+phone+"?text="+encodedMsg,"_blank");
 };
 
-/* DASHBOARD */
+  /* DASHBOARD */
 function renderAll(){
 $("totalCustomers").innerText=customers.length;
 $("totalServices").innerText=services.length;
+
 let income=services.reduce((a,s)=>a+Number(s.income||0),0);
 let exp=services.reduce((a,s)=>a+Number(s.expense||0),0);
-$("totalIncome").innerText=money(income);
-  $("totalExpense").innerText=money(exp);
+
+  $("totalIncome").innerText=money(income);
+$("totalExpense").innerText=money(exp);
 
 renderCustomers();
 renderReminders();
 
-$("recent").innerHTML=services.length?
+  $("recent").innerHTML=services.length?
 services.slice().reverse().slice(0,5).map(s=>`
 <div class="item">
 <b>👤 ${escapeHTML(s.name)}</b>
@@ -687,9 +758,9 @@ services.slice().reverse().slice(0,5).map(s=>`
 <p>डिस्काउंट: ${money(s.discount||0)}</p>
 <b>प्राप्त रकम: ${money(s.income||0)}</b><br><br>
 <button class="green" onclick="viewReceipt('${s.id}')">🧾 रसीद देखें</button>
-<button class="gray"
-onclick="shareBill('${s.id}')">WhatsApp बिल</button>
-<button class="primary" onclick="editService('${s.id}')">✏️ Edit Service</button>
+<button class="gray" onclick="shareBill('${s.id}')">WhatsApp बिल</button>
+<button class="primary"
+onclick="editService('${s.id}')">✏️ Edit Service</button>
 <button class="red" onclick="deleteService('${s.id}')">🗑️ Delete Service</button>
 </div>`).join("")
 :"अभी कोई सर्विस नहीं है।";
@@ -697,100 +768,181 @@ onclick="shareBill('${s.id}')">WhatsApp बिल</button>
 </script>
 
 <script>
-/* SPARE PARTS STOCK */
-let spareParts=JSON.parse(localStorage.getItem("riderSpareParts")||"[]");
-let purchaseHistory=JSON.parse(localStorage.getItem("riderPurchaseHistory")||"[]");
+/* SPARE PARTS STOCK MANAGEMENT */
 
-function addStockPart(){
+let spareParts=[];
+let purchaseHistory=[];
+
+try{
+spareParts=JSON.parse(localStorage.getItem("riderSpareParts")||"[]");
+purchaseHistory=JSON.parse(localStorage.getItem("riderPurchaseHistory")||"[]");
+
+  if(!Array.isArray(spareParts))spareParts=[];
+if(!Array.isArray(purchaseHistory))purchaseHistory=[];
+}catch(e){
+spareParts=[];
+purchaseHistory=[];
+}
+
+function saveStock(){
+localStorage.setItem("riderSpareParts",JSON.stringify(spareParts));
+localStorage.setItem("riderPurchaseHistory",JSON.stringify(purchaseHistory));
+}
+
+  /* ADD NEW PART */
+window.addStockPart=function(){
 const name=document.getElementById("partName").value.trim();
 const company=document.getElementById("partCompany").value.trim();
-const
-  buy=Number(document.getElementById("partBuy").value);
+const buy=Number(document.getElementById("partBuy").value);
 const sell=Number(document.getElementById("partSell").value);
 const qty=Number(document.getElementById("partQty").value);
 
-if(!name||!company||buy<=0||sell<=0||qty<=0){
-alert("सभी जानकारी सही-सही भरें");
+if(!name||!company||
+!Number.isFinite(buy)||buy<=0||
+!Number.isFinite(sell)||sell<=0||
+!Number.isInteger(qty)||qty<=0){
+alert("सभी जानकारी सही-सही भरें।");
 return;
-}
+  }
+  spareParts.push({
+id:Date.now(),
+name,company,buy,sell,qty
+});
 
-spareParts.push({name,company,buy,sell,qty});
-localStorage.setItem("riderSpareParts",JSON.stringify(spareParts));
+  purchaseHistory.push({
+name,company,qty,buy,
+total:buy*qty,
+date:new Date().toLocaleString("hi-IN"),
+type:"नया स्टॉक"
+});
+
+saveStock();
 
 ["partName","partCompany","partBuy","partSell","partQty"].forEach(id=>{
 document.getElementById(id).value="";
 });
-showStockParts();
-}
 
-function changeStock(index,amount){
-if(amount<0&&spareParts[index].qty<=0){
+alert("पार्ट सफलतापूर्वक स्टॉक में जुड़ गया!");
+showStockParts();
+};
+  
+  /* CHANGE STOCK */
+window.changeStock=function(index,amount){
+const part=spareParts[index];
+if(!part)return;
+
+if(amount<0&&part.qty<=0){
 alert("स्टॉक खत्म हो गया है!");
-  return;
+return;
 }
 
-spareParts[index].qty+=amount;
+if(amount<0){
+if(!confirm(part.name+" का एक पार्ट बिक्री करना चाहते हैं?"))return;
+part.qty--;
+}else{
+let input=prompt("कितने पार्ट खरीदने हैं?","1");
+if(input===null)return;
 
-if(amount>0){
+let qty=Number(input);
+if(!Number.isInteger(qty)||qty<=0){
+alert("सही मात्रा डालें।");
+return;
+  }
+  part.qty+=qty;
+
 purchaseHistory.push({
-name:spareParts[index].name,
-company:spareParts[index].company,
-qty:amount,
-buy:spareParts[index].buy,
-total:spareParts[index].buy*amount,
-date:new Date().toLocaleString("hi-IN")
+name:part.name,
+company:part.company,
+qty:qty,
+buy:part.buy,
+total:part.buy*qty,
+date:new Date().toLocaleString("hi-IN"),
+type:"अतिरिक्त खरीद"
 });
-localStorage.setItem("riderPurchaseHistory",JSON.stringify(purchaseHistory));
-}
-
-localStorage.setItem("riderSpareParts",JSON.stringify(spareParts));
+  }
+  saveStock();
 showStockParts();
+};
+
+/* DELETE PART */
+window.deleteStockPart=function(index){
+const part=spareParts[index];
+if(!part)return;
+
+  if(!confirm(part.name+" को स्टॉक से हटाना चाहते हैं?"))return;
+
+spareParts.splice(index,1);
+saveStock();
+showStockParts();
+};
+
+/* EDIT PART */
+window.editStockPart=function(index){
+const part=spareParts[index];
+if(!part)return;
+
+let name=prompt("पार्ट का नाम",part.name);
+if(name===null)return;
+
+let company=prompt("कंपनी का नाम",part.company);
+if(company===null)return;
+
+  let buy=Number(prompt("खरीद मूल्य",part.buy));
+let sell=Number(prompt("बिक्री मूल्य",part.sell));
+
+if(!name.trim()||!company.trim()||
+!Number.isFinite(buy)||buy<=0||
+!Number.isFinite(sell)||sell<=0){
+alert("सही जानकारी डालें।");
+return;
 }
 
-function showStockParts(){
+part.name=name.trim();
+part.company=company.trim();
+part.buy=buy;
+part.sell=sell;
+
+saveStock();
+showStockParts();
+};
+
+  /* SEARCH STOCK */
+window.searchStockParts=function(){
+const search=document.getElementById("stockSearch").value.toLowerCase();
+
+document.querySelectorAll(".stockPartCard").forEach(item=>{
+item.style.display=
+item.innerText.toLowerCase().includes(search)?"block":"none";
+});
+};
+
+  /* STOCK DISPLAY */
+window.showStockParts=function(){
 const list=document.getElementById("stockList");
 if(!list)return;
-list.innerHTML="";
-  const totalQty=spareParts.reduce((sum,part)=>sum+Number(part.qty),0);
-const totalValue=spareParts.reduce((sum,part)=>sum+(Number(part.buy)*Number(part.qty)),0);
-const lowStockParts=spareParts.filter(part=>Number(part.qty)<=3);
+  if(!box)return;
 
-list.innerHTML=`
-<div style="background:#142b50;color:white;padding:15px;border-radius:10px;margin-bottom:12px;">
-<h3>📦 कुल स्टॉक: ${totalQty} पार्ट</h3>
-<h3>💰 कुल स्टॉक कीमत: ₹${totalValue}</h3>
+if(!purchaseHistory.length){
+box.innerHTML="<p>अभी कोई खरीदारी रिकॉर्ड नहीं है।</p>";
+return;
+  }
+
+  box.innerHTML=purchaseHistory.slice().reverse().map(p=>`
+<div class="item">
+<b>🔧 ${escapeHTMLStock(p.name)}</b>
+<p>कंपनी: ${escapeHTMLStock(p.company)}</p>
+<p>प्रकार: ${escapeHTMLStock(p.type||"खरीद")}</p>
+<p>मात्रा: ${p.qty}</p>
+<p>खरीद मूल्य: ₹${p.buy}</p>
+<p>कुल खरीद: ₹${p.total}</p>
+<p>तारीख: ${escapeHTMLStock(p.date)}</p>
 </div>
-<input type="text" id="stockSearch" placeholder="🔍 पार्ट का नाम खोजें..." oninput="searchStockParts()">
-<div style="background:#fff3cd;color:#856404;padding:12px;margin:10px 0;border-radius:8px;">
-<h3>⚠️ Low Stock Report</h3>
-<h3>कम स्टॉक वाले पार्ट: ${lowStockParts.length}</h3>
-${lowStockParts.map(part=>`<p>🔧 ${part.name} - मात्रा: ${part.qty}</p>`).join("")}
-</div>`;
-
-spareParts.forEach((part,index)=>{
-const lowStock=part.qty<=3;
-list.innerHTML+=`
-<div class="stockPartCard" style="border-left:5px solid ${lowStock?'red':'green'};">
-<b>${part.name}</b><br>
-कंपनी: ${part.company}<br>
-खरीद: ₹${part.buy} | बिक्री: ₹${part.sell}<br>
-मात्रा: ${part.qty}<br>
-${lowStock?'<b style="color:red;">⚠️ LOW STOCK ALERT! माल कम है</b>':'<b style="color:green;">✓ स्टॉक उपलब्ध है</b>'}
-<br><br>
-<button onclick="changeStock(${index},-1)" class="red">➖ बिक्री</button>
-<button onclick="changeStock(${index},1)" class="green">➕ खरीद</button>
-</div>`;
-});
+`).join("");
 }
 
-function searchStockParts(){
-const search=document.getElementById("stockSearch").value.toLowerCase();
-  document.querySelectorAll(".stockPartCard").forEach(item=>{
-item.style.display=item.innerText.toLowerCase().includes(search)?"block":"none";
-});
-}
-
+/* INITIAL STOCK DISPLAY */
 showStockParts();
+
 </script>
 
 </body>
