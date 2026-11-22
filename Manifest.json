@@ -1,11 +1,19 @@
+
 {
   "name": "Rider Bike Care",
   "short_name": "Rider Care",
   "start_url": "./",
+  "scope": "./",
   "display": "standalone",
   "background_color": "#101d39",
   "theme_color": "#101d39",
   "icons": [
+    {
+      "src": "Bike.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
     {
       "src": "Bike.png",
       "sizes": "512x512",
