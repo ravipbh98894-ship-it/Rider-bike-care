@@ -647,7 +647,7 @@ filtered.map(c=>`
 </div>`).join("")
 :"कोई ग्राहक नहीं मिला।";
 }
-window.renderCustomers=>renderCustomers;
+window.renderCustomers=renderCustomers;
 
 /* CUSTOMER HISTORY */
 window.customerHistory=function(id){
@@ -690,7 +690,7 @@ const today=todayDayNumber();
 
 const list=services
 .filter(s=>s.nextServiceDate&&isValidDateString(s.nextServiceDate))
-.map(s=({
+.map(s=>({
 s,c:customers.find(c=>c.id===s.customerId),
 days:dateToDayNumber(s.nextServiceDate)-today
 }))
