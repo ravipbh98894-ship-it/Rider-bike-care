@@ -962,7 +962,7 @@ return String(value??"").replace(/[&<>"']/g,c=>({
 }[c]));
 }
 
-/* PURCHASE HISTORY */
+  /* PURCHASE HISTORY */
 function renderPurchaseHistory(){
 const box=document.getElementById("purchaseList");
 if(!box)return;
@@ -971,10 +971,19 @@ if(!purchaseHistory.length){
 box.innerHTML="<p>अभी कोई खरीदारी रिकॉर्ड नहीं है।</p>";
 return;
   }
-  
+
+  box.innerHTML=purchaseHistory.slice().reverse().map(p=>`
+<div class="item">
+<b>🔧 ${escapeHTMLStock(p.name)}</b>
+<p>कंपनी: ${escapeHTMLStock(p.company)}</p>
+<p>प्रकार: ${escapeHTMLStock(p.type||"खरीद")}</p>
+<p>मात्रा: ${p.qty}</p>
+<p>खरीद मूल्य: ₹${p.buy}</p>
+<p>कुल खरीद: ₹${p.total}</p>
+<p>तारीख: ${escapeHTMLStock(p.date)}</p>
 </div>
 `).join("");
-}
+  }
 
 /* INITIAL STOCK DISPLAY */
 showStockParts();
