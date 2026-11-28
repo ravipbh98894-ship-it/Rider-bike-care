@@ -67,7 +67,7 @@ h3{margin-top:5px}
 <label>Password</label>
 <input id="password" type="password" placeholder="Password डालें">
 <button class="primary" onclick="window.login()">Login</button>
-<button class="green" onclick="window.register()">Register</button>
+<button class="green" onclick="register()">Register</button>
 <button class="gray" onclick="resetPassword()">Password भूल गए?</button>
 <p id="authMessage"></p>
 </div>
@@ -739,7 +739,7 @@ $("totalServices").innerText=services.length;
 let income=services.reduce((a,s)=>a+Number(s.income||0),0);
 let exp=services.reduce((a,s)=>a+Number(s.expense||0),0);
 
-  $("totalIncome").innerText=money(income);
+$("totalIncome").innerText=money(income);
 $("totalExpense").innerText=money(exp);
 
 renderCustomers();
@@ -803,8 +803,9 @@ if(!name||!company||
 !Number.isInteger(qty)||qty<=0){
 alert("सभी जानकारी सही-सही भरें।");
 return;
-  }
-  spareParts.push({
+}
+
+spareParts.push({
 id:Date.now(),
 name,company,buy,sell,qty
 });
@@ -859,9 +860,9 @@ total:part.buy*qty,
 date:new Date().toLocaleString("hi-IN"),
 type:"अतिरिक्त खरीद"
 });
-  }
+}
 
-  saveStock();
+saveStock();
 showStockParts();
 };
 
@@ -921,22 +922,50 @@ item.innerText.toLowerCase().includes(search)?"block":"none";
 window.showStockParts=function(){
 const list=document.getElementById("stockList");
 if(!list)return;
-  if(!box)return;
 
-if(!purchaseHistory.length){
-box.innerHTML="<p>अभी कोई खरीदारी रिकॉर्ड नहीं है।</p>";
-return;
-  }
+const totalQty=spareParts.reduce((sum,p)=>sum+Number(p.qty),0);
 
-  box.innerHTML=purchaseHistory.slice().reverse().map(p=>`
-<div class="item">
-<b>🔧 ${escapeHTMLStock(p.name)}</b>
-<p>कंपनी: ${escapeHTMLStock(p.company)}</p>
-<p>प्रकार: ${escapeHTMLStock(p.type||"खरीद")}</p>
-<p>मात्रा: ${p.qty}</p>
-<p>खरीद मूल्य: ₹${p.buy}</p>
-<p>कुल खरीद: ₹${p.total}</p>
-<p>तारीख: ${escapeHTMLStock(p.date)}</p>
+const totalValue=spareParts.reduce(
+(sum,p)=>sum+(Number(p.buy)*Number(p.qty)),0
+);
+
+const lowStockParts=spareParts.filter(p=>Number(p.qty)<=3);
+
+list.innerHTML=`
+<div class="stockSummary">
+<h3>📦 कुल स्टॉक: ${totalQty} पार्ट</h3>
+<h3>💰 कुल स्टॉक कीमत: ₹${totalValue.toLocaleString("en-IN")}</h3>
+<h3>🔧 कुल अलग-अलग पार्ट: ${spareParts.length}</h3>
+</div>
+
+<div class="lowBox">
+<h3>⚠️ Low Stock Report</h3>
+<h3>कम स्टॉक वाले पार्ट: ${lowStockParts.length}</h3>
+${lowStockParts.length?
+lowStockParts.map(p=>`<p>🔧 ${escapeHTMLStock(p.name)} - मात्रा: ${p.qty}</p>`).join(""):
+"<p>सभी पार्ट्स का स्टॉक पर्याप्त है।</p>"}
+</div>
+
+<input type="text" id="stockSearch"
+placeholder="🔍 पार्ट का नाम खोजें..."
+oninput="searchStockParts()">
+`;
+  
+if(!spareParts.length){
+list.innerHTML+="<p>अभी कोई Spare Part नहीं जोड़ा गया है।</p>";
+}else{
+
+spareParts.forEach((part,index)=>{
+const lowStock=Number(part.qty)<=3;
+
+list.innerHTML+=`
+<div class="stockPartCard"
+style="border-left:5px solid ${lowStock?'red':'green'};">
+
+<b>🔧 ${escapeHTMLStock(part.name)}</b>
+<p>कंपनी: ${escapeHTMLStock(part.company)}</p>
+<p>खरीद: ₹${part.buy} | बिक्री: ₹${part.sell}</p>
+<p>मात्रा: <b>${part.qty}</b></p>
 <p>कुल कीमत: ₹${part.buy*part.qty}</p>
 ${lowStock?
 '<b style="color:red">⚠️ LOW STOCK ALERT! माल कम है</b>':
@@ -962,7 +991,7 @@ return String(value??"").replace(/[&<>"']/g,c=>({
 }[c]));
 }
 
-  /* PURCHASE HISTORY */
+/* PURCHASE HISTORY */
 function renderPurchaseHistory(){
 const box=document.getElementById("purchaseList");
 if(!box)return;
@@ -983,7 +1012,7 @@ return;
 <p>तारीख: ${escapeHTMLStock(p.date)}</p>
 </div>
 `).join("");
-  }
+}
 
 /* INITIAL STOCK DISPLAY */
 showStockParts();
